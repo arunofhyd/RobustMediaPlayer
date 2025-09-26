@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robust Media Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome CDN for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLMD/cdjN+KDRzH8j9w2b41Fk5y0Y+C1Yd8s8eU2v6S8p0CjD1+8e+xP8u+A+Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* --- CSS Custom Properties for Theming --- */
+        :root {
+            /* Dark Mode (Default) */
+            --bg-primary: #09090b;
+            --card-bg: #18181b;
+            --card-border: #27272a;
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa; /* gray-400 */
+            --input-bg: #3f3f46; /* gray-700 */
+            --input-border: #52525b; /* gray-600 */
+            --link-color: #60a5fa; /* blue-400 */
+        }
+
+        .light-mode {
+            /* Light Mode */
+            --bg-primary: #f4f4f5;
+            --card-bg: #ffffff;
+            --card-border: #e4e4e7;
+            --text-primary: #18181b;
+            --text-secondary: #71717a;
+            --input-bg: #f9f9fb;
+            --input-border: #e4e4e7;
+            --link-color: #2563eb; /* blue-600 */
+        }
+
+        /* --- Global Styles using Custom Properties --- */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .container-card {
+            background-color: var(--card-bg);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--card-border);
+            transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+        }
+        .text-secondary {
+            color: var(--text-secondary);
+        }
+        .text-link {
+            color: var(--link-color);
+        }
+        .input-style {
+            background-color: var(--input-bg);
+            border-color: var(--input-border);
+            color: var(--text-primary);
+        }
+        .status-box {
+            background-color: var(--input-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+        }
+
+        /* --- Component Specific Styles --- */
+        .media-container {
+            position: relative;
+            aspect-ratio: 16 / 9;
+            background-color: #000;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .media-container > * {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .file-input-wrapper input[type="file"] {
+            opacity: 0;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 20;
+        }
+        .btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+            font-weight: 600;
+        }
+        /* Font Awesome icon size */
+        .fas {
+            font-size: 1.5rem; /* Equivalent to w-6 h-6 */
+        }
+        /* Primary (Load Link) - Blue stays consistent */
+        .btn-primary {
+            background-color: #2563eb;
+            border-color: #2563eb;
+        }
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+        }
+        /* Secondary (Local Media) - Indigo stays consistent */
+        .btn-secondary {
+            background-color: #4f46e5;
+            border-color: #4f46e5;
+        }
+        .btn-secondary:hover {
+            background-color: #4338ca;
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
+        }
+        /* Tertiary (Subtitles) - Green stays consistent */
+        .btn-tertiary {
+            background-color: #10b981;
+            border-color: #10b981;
+        }
+        .btn-tertiary:hover {
+            background-color: #059669;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8 min-h-screen">
+
+    <div id="app" class="max-w-4xl mx-auto">
+        <header class="text-center mb-8 flex items-center justify-between">
+            <div class="flex-grow text-center">
+                <h1 class="text-3xl sm:text-4xl font-extrabold text-link">Robust Media Player</h1>
+                <p class="mt-2 text-secondary">Load direct video/audio files or use external embeds.</p>
+            </div>
+            
+            <!-- Theme Toggle Button: Fixed size (w-12 h-12) and centered content for constant shape -->
+            <button id="themeToggle" class="w-12 h-12 flex items-center justify-center rounded-full border border-card-border bg-card-bg shadow-lg hover:shadow-xl transition-colors duration-300">
+                <!-- Moon Icon (Muted color) -->
+                <i id="moonIcon" class="fas fa-moon text-gray-400"></i>
+                <!-- Sun Icon (Muted color) -->
+                <i id="sunIcon" class="fas fa-sun text-gray-400 hidden"></i>
+            </button>
+        </header>
+
+        <!-- Main Card Container (Drag Target) -->
+        <div id="mainCard" class="container-card p-6 sm:p-8 rounded-xl relative">
+            
+            <!-- Error/Warning Alert Box -->
+            <div id="alertBox" class="hidden p-4 rounded-lg text-sm mb-6 shadow-xl flex items-center" role="alert">
+                <div class="flex items-center">
+                    <!-- Icon is dynamically set by JS -->
+                    <svg id="alertIcon" class="w-5 h-5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                    <span id="alertText" class="font-medium"></span>
+                </div>
+            </div>
+
+            <!-- Control Panel -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <!-- Video URL Input (2/2 width) -->
+                <div class="md:col-span-2">
+                    <label for="videoUrl" class="block text-sm font-medium text-secondary mb-1">Video/Embed URL</label>
+                    <div class="flex">
+                        <input type="text" id="videoUrl" placeholder="Enter link, e.g., https://streamtape.com/e/ or direct mp4/mp3 link"
+                               class="flex-grow p-3 border rounded-l-lg input-style focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <button id="loadUrlBtn" class="btn btn-primary px-4 py-3 text-white rounded-r-lg">Load Link</button>
+                    </div>
+                </div>
+
+                <!-- Load Local Media File (1/2 width) -->
+                <div class="file-input-wrapper relative overflow-hidden inline-block w-full">
+                    <button class="btn btn-secondary w-full text-white py-3 rounded-lg shadow-md flex flex-col justify-center items-center">
+                        <div class="text-base">Load Local Media File</div>
+                        <span class="text-xs font-normal text-indigo-300 opacity-80 mt-1">Video (.mp4, .webm, .mkv, .avi, .mov) & Audio (.mp3, .wav, .flac)</span>
+                    </button>
+                    <input type="file" id="videoFile" accept="video/*,audio/*" class="absolute inset-0 block">
+                </div>
+
+                <!-- Load Subtitle File (1/2 width) -->
+                <div class="file-input-wrapper relative overflow-hidden inline-block w-full">
+                    <button class="btn btn-tertiary w-full text-white py-3 rounded-lg shadow-md flex flex-col justify-center items-center">
+                        <div class="text-base">Load Local Subtitle</div>
+                        <span class="text-xs font-normal text-green-300 opacity-80 mt-1">Subtitles (.vtt, .srt)</span>
+                    </button>
+                    <input type="file" id="subtitleFile" accept=".vtt,.srt" class="absolute inset-0 block">
+                </div>
+            </div>
+
+            <!-- Video Player Area - Container switches content based on URL type -->
+            <div class="media-container rounded-xl shadow-2xl">
+                <!-- Drag & Drop Overlay -->
+                <div id="dragDropOverlay" class="absolute inset-0 z-10 hidden flex-col items-center justify-center 
+                                                  bg-gray-900/90 border-4 border-dashed border-blue-500 rounded-xl transition duration-150 ease-in-out pointer-events-none">
+                    <p class="text-3xl text-blue-300 font-bold mb-2">Drop File Here</p>
+                    <p class="text-lg text-gray-400">(Video, Audio, .VTT, or .SRT)</p>
+                </div>
+                
+                <!-- HTML5 Video Player (visible for local/direct media files) -->
+                <video id="videoPlayer" controls preload="auto" poster="https://placehold.co/800x450/1f2937/a0aec0?text=Ready+to+Load+Media">
+                    <!-- Tracks will be dynamically added here -->
+                </video>
+                
+                <!-- Iframe Player (visible for external embed links) -->
+                <iframe id="iframePlayer" style="display: none;" 
+                        allowfullscreen allowtransparency allow="autoplay" scrolling="no" frameborder="0">
+                </iframe>
+            </div>
+
+            <!-- Status Message -->
+            <div id="statusMessage" class="mt-4 text-center text-sm p-3 rounded-lg status-box">
+                Ready to load content. Drag and drop a file onto the player area above!
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Setup Firestore global variables (even if not used, they must be initialized if present)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+
+        // --- Core Application Logic ---
+        
+        const videoPlayer = document.getElementById('videoPlayer');
+        const iframePlayer = document.getElementById('iframePlayer');
+        const videoUrlInput = document.getElementById('videoUrl');
+        const loadUrlBtn = document.getElementById('loadUrlBtn');
+        const videoFileInput = document.getElementById('videoFile');
+        const subtitleFileInput = document.getElementById('subtitleFile');
+        const statusMessage = document.getElementById('statusMessage');
+        const mainCard = document.getElementById('mainCard'); // Main drag target
+        const dragDropOverlay = document.getElementById('dragDropOverlay');
+        const themeToggle = document.getElementById('themeToggle');
+        const sunIcon = document.getElementById('sunIcon');
+        const moonIcon = document.getElementById('moonIcon');
+
+        let alertTimeout;
+        let currentVideoBlobUrl = null; // Track the current video's blob URL for revocation
+
+        // --- Theme Toggle Logic ---
+        
+        /**
+         * Sets the current theme mode (light or dark).
+         * @param {string} theme - 'light' or 'dark'.
+         */
+        function setTheme(theme) {
+            if (theme === 'light') {
+                document.body.classList.add('light-mode');
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.body.classList.remove('light-mode');
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        themeToggle.addEventListener('click', () => {
+            if (document.body.classList.contains('light-mode')) {
+                setTheme('dark');
+            } else {
+                setTheme('light');
+            }
+        });
+
+        // Initialize theme on load
+        const storedTheme = localStorage.getItem('theme');
+        if (storedTheme) {
+            setTheme(storedTheme);
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            // Default to system light preference if no storage exists
+            setTheme('light');
+        } else {
+            setTheme('dark');
+        }
+
+        // --- Utility Functions ---
+
+        /**
+         * Displays a temporary, visually distinct alert message for errors/warnings/successes.
+         */
+        function showTemporaryAlert(message, type) {
+            const alertBox = document.getElementById('alertBox');
+            const alertText = document.getElementById('alertText');
+            const alertIcon = document.getElementById('alertIcon');
+
+            if (alertTimeout) {
+                clearTimeout(alertTimeout);
+            }
+
+            // Reset classes
+            alertBox.className = "hidden p-4 rounded-lg text-sm mb-6 shadow-xl flex items-center";
+            alertIcon.classList.remove('text-red-300', 'text-yellow-300', 'text-green-300');
+
+            if (type === 'error') {
+                // Red for critical failure (user requested orange/red)
+                alertBox.classList.add('bg-red-900', 'text-red-300', 'border', 'border-red-700');
+                // Error icon
+                alertIcon.innerHTML = `<path fill-rule="evenodd" d="M8.257 3.376a1.5 1.5 0 012.486 0l5.5 10A1.5 1.5 0 0115 15.75H5a1.5 1.5 0 01-1.243-2.374l5.5-10zM12 9a1 1 0 11-2 0 1 1 0 012 0zm-1 2a1 1 0 10-2 0v2a1 1 0 102 0v-2z" clip-rule="evenodd" />`;
+            } else if (type === 'warning') {
+                // Yellow/Orange for non-critical warnings
+                alertBox.classList.add('bg-yellow-900', 'text-yellow-300', 'border', 'border-yellow-700');
+                // Warning icon
+                alertIcon.innerHTML = `<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>`;
+            } else if (type === 'success') {
+                // Green for success messages
+                alertBox.classList.add('bg-green-900', 'text-green-300', 'border', 'border-green-700');
+                // Checkmark icon
+                alertIcon.innerHTML = `<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.644-1.897-1.898a.75.75 0 10-1.06 1.06l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />`; 
+            }
+
+            alertText.textContent = message;
+            alertBox.classList.remove('hidden');
+
+            alertTimeout = setTimeout(() => {
+                alertBox.classList.add('hidden');
+            }, 8000);
+        }
+
+        /**
+         * Clears existing subtitle tracks from the video element.
+         */
+        function clearTracks() {
+            const tracks = videoPlayer.querySelectorAll('track');
+            tracks.forEach(track => {
+                if (track.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(track.src);
+                }
+                track.remove();
+            });
+        }
+        
+        /**
+         * Switches the display mode to either HTML5 Video or Iframe Embed.
+         * @param {string} mode - 'video' or 'iframe'.
+         */
+        function setPlayerMode(mode) {
+            if (mode === 'video') {
+                videoPlayer.style.display = 'block';
+                iframePlayer.style.display = 'none';
+                iframePlayer.src = ''; 
+                // Enable drag drop overlay only for HTML5 video mode
+                dragDropOverlay.classList.remove('pointer-events-none'); 
+            } else if (mode === 'iframe') {
+                videoPlayer.style.display = 'none';
+                videoPlayer.src = ''; 
+                videoPlayer.poster = 'https://placehold.co/800x450/1f2937/a0aec0?text=External+Embed+Loaded';
+                clearTracks();
+                iframePlayer.style.display = 'block';
+                // Disable drag drop overlay in iframe mode as subs won't work
+                dragDropOverlay.classList.add('pointer-events-none');
+            }
+        }
+
+        /**
+         * Converts SRT format text to VTT format text.
+         */
+        function srtToVtt(srtText) {
+            // Replace all comma delimiters (used by SRT for milliseconds) with periods (used by VTT)
+            const vttBody = srtText.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+            return 'WEBVTT\n\n' + vttBody;
+        }
+
+        /**
+         * Updates the media source and switches between HTML5 Video and Iframe.
+         * @param {string} src - The new media source URL.
+         */
+        function loadMediaSource(src) {
+            src = src ? src.trim() : '';
+
+            // Handle clearing source
+            if (!src) {
+                if (currentVideoBlobUrl) {
+                    URL.revokeObjectURL(currentVideoBlobUrl);
+                    currentVideoBlobUrl = null;
+                }
+                setPlayerMode('video');
+                videoPlayer.src = '';
+                videoPlayer.poster = 'https://placehold.co/800x450/1f2937/a0aec0?text=No+Media+Loaded';
+                statusMessage.textContent = 'Media source cleared.';
+                videoPlayer.load();
+                return;
+            }
+
+            const isBlobUrl = src.startsWith('blob:');
+            const mediaExtensions = /\.(mp4|webm|ogg|mov|avi|m4v|flv|f4v|mkv|wmv|ts|mp3|wav|flac|m4a)$/i;
+            const urlWithoutQuery = src.split('?')[0];
+            
+            const isDirectMediaFile = mediaExtensions.test(urlWithoutQuery) || isBlobUrl; 
+            const isExternalLink = src.startsWith('http://') || src.startsWith('https://');
+
+            if (isDirectMediaFile) {
+                // Mode 1: HTML5 Video/Audio (Supports Subtitles)
+                setPlayerMode('video');
+                
+                // --- Memory Management: Revoke old Blob URL ---
+                if (currentVideoBlobUrl && currentVideoBlobUrl !== src && currentVideoBlobUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(currentVideoBlobUrl);
+                }
+
+                // If the new source is a blob URL, track it
+                if (isBlobUrl) {
+                    currentVideoBlobUrl = src;
+                } else {
+                    currentVideoBlobUrl = null;
+                }
+                
+                videoPlayer.removeAttribute('src'); 
+                videoPlayer.src = src; 
+                videoPlayer.load();
+                
+                videoPlayer.poster = '';
+                const sourceType = isBlobUrl ? 'Local File (Drag & Drop)' : 'Direct Link';
+                const mediaType = src.match(/\.(mp3|wav|flac|m4a)$/i) ? 'Audio' : 'Video';
+
+                statusMessage.textContent = `${sourceType} (${mediaType}) loaded. Local subtitle loading is supported.`;
+                showTemporaryAlert(`Successfully switched to HTML5 ${mediaType} Mode. Source Type: ${sourceType}`, 'success');
+            } else if (isExternalLink) {
+                // Revoke any previous local video URL
+                if (currentVideoBlobUrl) {
+                    URL.revokeObjectURL(currentVideoBlobUrl);
+                    currentVideoBlobUrl = null;
+                }
+                // Mode 2: Iframe Embed (Does NOT support local Subtitles)
+                setPlayerMode('iframe');
+                iframePlayer.src = src;
+                statusMessage.innerHTML = 'External embed loaded via Iframe. <span class="text-red-400 font-bold">Local subtitle loading is NOT supported.</span>';
+                showTemporaryAlert('Warning: External embed loaded. Subtitles are unavailable due to cross-domain security.', 'warning');
+            } else {
+                setPlayerMode('video');
+                videoPlayer.src = '';
+                videoPlayer.poster = 'https://placehold.co/800x450/cc3333/ffffff?text=Invalid+Input';
+                videoPlayer.load();
+                statusMessage.textContent = 'Error: Unrecognized link format or insecure protocol.';
+                showTemporaryAlert('Error: Unrecognized link format. Please check your URL input.', 'error');
+            }
+        }
+
+        /**
+         * Processes a subtitle file (VTT or SRT) and attaches it to the video player.
+         */
+        function processSubtitleFile(file) {
+             if (videoPlayer.style.display === 'none' || videoPlayer.src === '') {
+                 showTemporaryAlert('Error: Load a media file in HTML5 Player Mode first.', 'error');
+                 subtitleFileInput.value = null; 
+                 return;
+            }
+
+            const fileName = file.name.toLowerCase();
+            let mimeType = 'text/vtt';
+            let fileType = '';
+            
+            if (fileName.endsWith('.vtt')) {
+                fileType = 'WebVTT (.vtt)';
+            } else if (fileName.endsWith('.srt')) {
+                fileType = 'SubRip (.srt)';
+            } else {
+                showTemporaryAlert('Error: Unsupported subtitle file type. Only .vtt and .srt are accepted.', 'error');
+                subtitleFileInput.value = null;
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                let textContent = e.target.result;
+
+                try {
+                    if (fileType === 'SubRip (.srt)') {
+                        textContent = srtToVtt(textContent);
+                        statusMessage.textContent = `Converting ${fileType} to VTT...`;
+                    }
+
+                    const subtitleBlob = new Blob([textContent], { type: mimeType });
+                    const subtitleUrl = URL.createObjectURL(subtitleBlob);
+
+                    clearTracks(); 
+
+                    const track = document.createElement('track');
+                    track.kind = 'subtitles';
+                    track.label = `Local Subs (${fileType})`;
+                    track.srclang = 'en';
+                    track.src = subtitleUrl;
+                    track.default = true;
+
+                    videoPlayer.appendChild(track);
+
+                    statusMessage.textContent = `Subtitle file "${file.name}" loaded and attached.`;
+                    showTemporaryAlert(`Subtitle file "${file.name}" loaded successfully. Activate it in the video controls.`, 'success');
+                    
+                    track.onerror = () => {
+                        statusMessage.textContent = `CRITICAL ERROR: Failed to load subtitle track (check file format validity).`;
+                        showTemporaryAlert('CRITICAL ERROR: Subtitle file could not be parsed by the browser.', 'error');
+                    };
+
+                } catch (error) {
+                    console.error('Subtitle processing error:', error);
+                    statusMessage.textContent = `An error occurred while processing the subtitle file.`;
+                    showTemporaryAlert('An error occurred while processing the subtitle file.', 'error');
+                }
+                subtitleFileInput.value = null; 
+            };
+            reader.onerror = (error) => {
+                console.error('FileReader error:', error);
+                statusMessage.textContent = 'Error reading the subtitle file from the disk.';
+                showTemporaryAlert('Error reading the subtitle file from the disk.', 'error');
+            };
+
+            reader.readAsText(file);
+        }
+
+        // --- Event Listeners and Initialization ---
+        
+        // Listener for the "Load URL" button.
+        loadUrlBtn.addEventListener('click', () => {
+            const url = videoUrlInput.value.trim();
+            loadMediaSource(url);
+            videoFileInput.value = '';
+        });
+
+        // Listener for local video file input.
+        videoFileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const fileUrl = URL.createObjectURL(file);
+                loadMediaSource(fileUrl); 
+                videoUrlInput.value = '';
+            }
+        });
+
+        // Listener for local subtitle file input.
+        subtitleFileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                processSubtitleFile(file);
+            }
+        });
+
+        // Initial setup for the poster image on error/no source
+        videoPlayer.addEventListener('error', () => {
+            statusMessage.textContent = 'Error loading video source. Check URL or file format.';
+            videoPlayer.poster = 'https://placehold.co/800x450/cc3333/ffffff?text=Media+Loading+Failed';
+            showTemporaryAlert('Media failed to load. Check URL or file type.', 'error');
+        });
+
+        // --- Drag and Drop Logic ---
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            mainCard.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+
+        mainCard.addEventListener('dragenter', (e) => {
+            if (videoPlayer.style.display !== 'none' && e.dataTransfer.types.includes('Files')) {
+                 dragDropOverlay.style.display = 'flex';
+            }
+        }, false);
+        
+        mainCard.addEventListener('dragleave', (e) => {
+            if (!mainCard.contains(e.relatedTarget)) {
+                dragDropOverlay.style.display = 'none';
+            }
+        }, false);
+
+        mainCard.addEventListener('drop', (e) => {
+            dragDropOverlay.style.display = 'none';
+            const files = e.dataTransfer.files;
+
+            if (files.length === 0) return;
+
+            const file = files[0];
+            const fileName = file.name.toLowerCase();
+
+            const isVideo = file.type.startsWith('video/') || fileName.match(/\.(mp4|webm|mkv|avi|mov|ts|wmv)$/i);
+            const isAudio = file.type.startsWith('audio/') || fileName.match(/\.(mp3|wav|flac|m4a)$/i);
+            const isSubtitle = fileName.endsWith('.vtt') || fileName.endsWith('.srt');
+
+            if (isVideo || isAudio) {
+                const fileUrl = URL.createObjectURL(file);
+                loadMediaSource(fileUrl);
+                videoUrlInput.value = '';
+            } else if (isSubtitle) {
+                processSubtitleFile(file);
+            } else {
+                showTemporaryAlert('Dropped file is neither a supported media nor a subtitle file. Supported: Video, Audio, .vtt, .srt', 'error');
+            }
+        }, false);
+        
+        // Add keyboard shortcut for basic media control (Space to Play/Pause)
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && document.activeElement !== videoUrlInput && videoPlayer.style.display !== 'none') {
+                e.preventDefault();
+                if (videoPlayer.paused) {
+                    videoPlayer.play();
+                } else {
+                    videoPlayer.pause();
+                }
+            }
+        });
+        
+        // --- Final Setup ---
+        // We call setTheme already in the theme logic block above, 
+        // so we just ensure the default player mode is set.
+        setPlayerMode('video');
+
+    </script>
+</body>
+</html>
