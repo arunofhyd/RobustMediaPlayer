@@ -28,8 +28,6 @@
     <meta name="msapplication-TileColor" content="#3b82f6">
     <meta name="theme-color" id="theme-color-meta" content="#3b82f6">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LKOBM0BdHUwbPv3dW/qzrDMgwAoTKNfm7Vgoh2d7Zn+OcQl6yy9oTjqFg6N6rkT6g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    
     <link rel="preload" 
           href="https://fonts.googleapis.com/css2?family=Fira+Sans&family=Inter:wght@400;600&family=Lato&family=Montserrat&family=Open+Sans&family=PT+Serif&family=Roboto&family=Source+Sans+Pro&display=swap" 
           as="style" 
@@ -95,18 +93,24 @@
             color: var(--text-secondary);
         }
         
-        /* FIX: Ensure fas icons are visible and correctly sized/colored */
-        .fas, .fa-solid, .fa-moon, .fa-sun, .fa-cog {
-            /* Override Tailwind's base color/size if it's too aggressive */
-            font-size: 1.25rem !important;
-            color: var(--text-primary) !important;
-            /* Ensure font-family is correctly picked up for fas */
-            font-family: "Font Awesome 6 Solid" !important;
+        /* ICON FIX: Removed Font Awesome CSS and using standard Unicode/Emoji styling */
+        .icon {
+            font-size: 1.5rem; /* Slightly larger for visibility */
+            transition: color 0.3s;
+            color: var(--text-primary);
+            line-height: 1; /* Prevent vertical alignment issues */
         }
-
-        /* FIX: Header/Theme Toggle button theming for consistency */
+        .light-mode .icon-sun {
+             /* In light mode, the sun should be a darker color for contrast */
+            color: var(--text-primary);
+        }
+        .icon-moon {
+             /* In dark mode, the moon should be light */
+            color: var(--text-primary);
+        }
+        
+        /* Header/Theme Toggle button theming for consistency */
         #themeToggle {
-            /* Apply general card styles for consistent look in both modes */
             background-color: var(--card-bg);
             border: 1px solid var(--card-border);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -171,13 +175,13 @@
             box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
         }
         
-        /* FIX: Remove ugly grey box around font size slider by customizing the track */
+        /* Slider Styling Fix */
         input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
-            background: transparent; /* Remove default track background */
+            background: transparent;
             cursor: pointer;
-            height: 16px; /* Give it a set height */
+            height: 16px;
         }
         input[type="range"]:focus {
             outline: none;
@@ -188,7 +192,6 @@
         /* Webkit (Chrome, Safari, Edge) */
         input[type="range"]::-webkit-slider-runnable-track {
             height: 8px;
-            /* Use a themed color instead of a hardcoded ugly grey */
             background: var(--input-border); 
             border-radius: 4px;
             border: none;
@@ -220,6 +223,21 @@
             border: 2px solid var(--card-bg);
         }
 
+        /* --- SUBTITLE SETTINGS LAYOUT FIX --- */
+        .setting-control {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        #subFontColor, #subFontFamily, #subFontSize {
+            height: 38px;
+            padding: 8px 4px;
+        }
+        #subFontColor {
+            padding: 2px;
+            height: 38px;
+        }
+
     </style>
 </head>
 <body class="p-4 sm:p-8 min-h-screen">
@@ -242,8 +260,8 @@
                     class="w-12 h-12 flex items-center justify-center rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex-shrink-0"
                     aria-label="Toggle Dark/Light Mode"
                     title="Toggle Dark/Light Mode">
-                <i id="moonIcon" class="fa-solid fa-moon fas" aria-hidden="true"></i>
-                <i id="sunIcon" class="fa-solid fa-sun fas hidden" aria-hidden="true"></i>
+                <span id="moonIcon" class="icon icon-moon" aria-hidden="true">&#x1F319;</span> 
+                <span id="sunIcon" class="icon icon-sun hidden" aria-hidden="true">&#x2600;</span>
             </button>
         </header>
 
@@ -296,7 +314,7 @@
                                  aria-label="Toggle Subtitle Appearance Settings"
                                  aria-controls="subSettingsPanel"
                                  aria-expanded="false">
-                            <i class="fa-solid fa-cog fas text-white transition-transform duration-300" aria-hidden="true"></i>
+                            <span class="icon" style="color: white; transform: rotate(0deg); transition: transform 0.3s;" aria-hidden="true">&#x2699;</span>
                         </button>
                     </div>
                 </div>
@@ -305,18 +323,19 @@
             <div id="subSettingsPanel" class="mb-6 hidden border border-card-border shadow-md rounded-xl bg-card-bg" 
                  role="region" aria-labelledby="sub-settings-heading">
                 <div id="subSettingsContent" class="p-4">
-                    <h3 id="sub-settings-heading" class="text-lg font-semibold text-link mb-3">Subtitle Appearance Settings</h3>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                    <h3 id="sub-settings-heading" class="text-lg font-semibold text-link mb-4">Subtitle Appearance Settings</h3>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                         
-                        <div>
-                            <label for="subFontColor" class="block text-secondary mb-1">Font Color</label>
-                            <input type="color" id="subFontColor" class="w-full h-8 p-0 border-none rounded input-style cursor-pointer" value="#ffffff"
+                        <div class="setting-control">
+                            <label for="subFontColor" class="text-secondary">Font Color</label>
+                            <input type="color" id="subFontColor" class="w-full border rounded input-style cursor-pointer" value="#ffffff"
                                      aria-label="Subtitle Font Color Picker">
                         </div>
                         
-                        <div class="col-span-1">
-                            <label for="subFontFamily" class="block text-secondary mb-1">Font Family</label>
-                            <select id="subFontFamily" class="w-full p-1.5 border rounded input-style text-sm"
+                        <div class="setting-control">
+                            <label for="subFontFamily" class="text-secondary">Font Family</label>
+                            <select id="subFontFamily" class="w-full border rounded input-style text-sm"
                                          aria-label="Subtitle Font Family Selector">
                                 <option value="'Inter', sans-serif">Inter (Default)</option>
                                 <option value="'Roboto', sans-serif">Roboto (Clean Sans)</option>
@@ -330,10 +349,10 @@
                             </select>
                         </div>
 
-                        <div class="col-span-1">
-                            <label for="subFontSize" class="block text-secondary mb-1">Font Size (<span id="currentFontSize">24px</span>)</label>
+                        <div class="setting-control">
+                            <label for="subFontSize" class="text-secondary">Font Size (<span id="currentFontSize">24px</span>)</label>
                             <input type="range" id="subFontSize" min="2" max="100" value="24" step="1"
-                                     class="w-full h-8 cursor-pointer"
+                                     class="w-full cursor-pointer"
                                      aria-label="Subtitle Font Size Slider, minimum 2 pixels, maximum 100 pixels">
                         </div>
                     </div>
@@ -509,7 +528,6 @@
 
         /**
          * Reads current input values, saves them to localStorage, and updates the ::cue CSS rule AND the live demo.
-         * FIX: Updates demo text size to be proportional to screen size.
          */
         function applySubtitleStyles() {
             // Read raw value (number string from slider)
@@ -535,11 +553,11 @@
             const demoBgColor = 'transparent'; 
             
             // FIX: Calculate proportional demo size based on viewport width (vw) for full-screen proportionality.
-            // 100px size is max. We want to scale a 100px font to roughly 5vw (e.g., on a large screen).
-            // Example: 100px -> 5vw. 24px -> 1.2vw. Formula: (rawFontSize / 100) * 5
+            // Using a lower minimum clamp (0.5vw instead of 1.0vw) allows smaller font sizes to be visually distinct.
+            // Formula: (rawFontSize / 100) * 5
             const proportionalSize = (parseInt(rawFontSize) / 100) * 5; 
-            // Clamp the demo size for readability
-            const demoFontSize = Math.max(1.0, Math.min(6.0, proportionalSize)); 
+            // FIX: Lower the minimum clamp to see smaller size changes (e.g., 2px is 0.1vw, 20px is 1.0vw)
+            const demoFontSize = Math.max(0.5, Math.min(6.0, proportionalSize)); 
             
             // --- 1. Apply to actual ::cue element (via dynamic style tag) ---
             const cssRule = `
@@ -577,23 +595,26 @@
          */
         function toggleSubSettings() {
             const isHidden = subSettingsPanel.classList.toggle('hidden');
-            
+            const gearIcon = subSettingsToggle.querySelector('span'); // Target the Unicode span
+
             // Toggle visibility of the demo box along with the panel
             subtitleDemo.classList.toggle('hidden', isHidden);
             
             // Update the gear icon rotation (Subtle 180-degree flip)
-            subSettingsToggle.querySelector('.fas').style.transform = isHidden ? '' : 'rotate(180deg)';
+            gearIcon.style.transform = isHidden ? '' : 'rotate(180deg)';
             
             // Update ARIA attribute for screen readers
             subSettingsToggle.setAttribute('aria-expanded', !isHidden);
 
-            // Adjust main card corner rounding
+            // Adjust main card corner rounding to visually connect/disconnect the panel
             if (isHidden) {
+                // When panel is hidden, main card should be fully rounded
                 mainCard.classList.add('rounded-xl');
                 mainCard.classList.remove('rounded-b-none');
             } else {
-                mainCard.classList.add('rounded-b-none');
+                // When panel is visible, main card should lose its bottom rounding
                 mainCard.classList.remove('rounded-xl');
+                mainCard.classList.add('rounded-b-none');
                 // Ensure the new panel is rounded at the bottom when visible
                 subSettingsPanel.classList.remove('rounded-xl');
                 subSettingsPanel.classList.add('rounded-b-xl');
