@@ -1,51 +1,34 @@
 # 🎬 Robust Media Player  
 
-A simple, single-file **HTML media player** designed for flexibility and local subtitle synchronization.  
-This application allows you to load media from **direct file links**, **local files (via upload or drag-and-drop)**, or **external embed links**, while offering **automatic SRT-to-VTT conversion** for subtitles.  
+A feature-rich, single-file **HTML media player** designed to play **local video/audio files** or stream **embedded content**, with **powerful, persistent subtitle customization**.  
+Built using **native HTML5** and **Tailwind CSS** for a clean, responsive aesthetic.  
 
 ---
 
-## 🌟 Features  
+## ✨ Features  
 
-- **Dual-Mode Playback**  
-  - Automatically switches between the powerful HTML5 `<video>` element (for local and direct files) and an `<iframe>` (for external embed links like Streamtape).  
+- **Dual-Mode Player**  
+  - Seamlessly handles local media files (`.mp4`, `.webm`, `.mp3`, etc.) using the **HTML5 `<video>` tag**.  
+  - Loads external embed links (e.g., **Streamtape**) using an `<iframe>`.  
 
-- **Local Subtitle Synchronization**  
-  - Load local subtitle files (`.vtt` or `.srt`) and sync them with media played in HTML5 mode.  
-  - Includes automatic **SRT → VTT conversion**.  
+- **Subtitles (VTT/SRT)**  
+  - Supports local `.vtt` and popular `.srt` subtitle files.  
+  - Includes **automatic SRT → VTT conversion**.  
+
+- **Live Customization**  
+  - Access the **Subtitle Appearance Settings** panel to adjust styling in real time:  
+    - 🎨 Font Color  
+    - 🖼 Background Type (Solid, Transparent, or Custom Color)  
+    - 🔠 Font Size (from Tiny → Max)  
+    - 📝 Font Family (options like **Roboto**, **Montserrat**, and **Fira Sans** for readability)  
 
 - **Drag-and-Drop Support**  
-  - Drag and drop media or subtitle files directly onto the player area.  
+  - Quickly load media or subtitle files by dropping them directly onto the player area.  
 
-- **Modern UI & Theme Toggle**  
-  - Clean, professional, and fully responsive design.  
-  - Seamless **Dark/Light Mode** switch.  
+- **Theme Toggle**  
+  - Switch between **Dark Mode** 🌙 and **Light Mode** ☀️.  
+  - Theme preference is saved locally for persistence.  
 
-- **Robust Error Handling**  
-  - Clear, color-coded alerts for:  
-    - ✅ Success  
-    - ⚠️ Warnings (e.g., cross-domain issues)  
-    - ❌ Critical errors  
-
-- **Memory Management**  
-  - Efficient cleanup with `URL.revokeObjectURL()` for local files.  
-
-- **Single-File Deployment**  
-  - Everything (HTML, CSS, JavaScript) is contained in **one lightweight `index.html`** file.  
-
----
-
-## 🚀 Usage  
-
-1. **Download / Clone** this repository.  
-2. Open `index.html` in your browser.  
-3. Load media by:  
-   - Dragging & dropping a video file  
-   - Entering a direct media file URL  
-   - Embedding an external link (e.g., Streamtape)  
-4. Optionally load a subtitle file (`.vtt` or `.srt`).  
-
----
-
-## 📂 Project Structure  
-
+- **Robust & Responsive**  
+  - Mobile-first, fully responsive design.  
+  - Strong error handling & efficient memory management (`Blob` revocation).
