@@ -28,6 +28,7 @@
     <meta name="msapplication-TileColor" content="#3b82f6">
     <meta name="theme-color" id="theme-color-meta" content="#3b82f6">
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <link rel="preload" 
           href="https://fonts.googleapis.com/css2?family=Fira+Sans&family=Inter:wght@400;600&family=Lato&family=Montserrat&family=Open+Sans&family=PT+Serif&family=Roboto&family=Source+Sans+Pro&display=swap" 
           as="style" 
@@ -70,11 +71,23 @@
             color: var(--text-primary);
             transition: background-color 0.3s, color 0.3s;
         }
+        /* FIX: Reduce padding for small screens */
+        @media (max-width: 639px) { 
+            body {
+                padding: 0.75rem; /* p-3 equivalent for small screens */
+            }
+        }
         .container-card {
             background-color: var(--card-bg);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             border: 1px solid var(--card-border);
             transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+        }
+        /* FIX: Reduce card padding for phone view (p-4 instead of p-6/p-8) */
+        @media (max-width: 639px) { 
+             #mainCard {
+                padding: 1rem; 
+            }
         }
         .text-secondary {
             color: var(--text-secondary);
@@ -93,19 +106,17 @@
             color: var(--text-secondary);
         }
         
-        /* ICON FIX: Removed Font Awesome CSS and using standard Unicode/Emoji styling */
+        /* ICON STYLING (UNICODE) */
         .icon {
-            font-size: 1.5rem; /* Slightly larger for visibility */
+            font-size: 1.5rem; 
             transition: color 0.3s;
             color: var(--text-primary);
-            line-height: 1; /* Prevent vertical alignment issues */
+            line-height: 1; 
         }
         .light-mode .icon-sun {
-             /* In light mode, the sun should be a darker color for contrast */
             color: var(--text-primary);
         }
         .icon-moon {
-             /* In dark mode, the moon should be light */
             color: var(--text-primary);
         }
         
@@ -243,21 +254,21 @@
 <body class="p-4 sm:p-8 min-h-screen">
 
     <div id="app" class="max-w-5xl mx-auto" role="main">
-        <header class="text-center mb-8 flex items-center justify-between">
-            <div class="flex-grow text-center">
-                <div class="inline-flex items-center justify-center">
+        <header class="text-center mb-6 sm:mb-8 flex items-center justify-between">
+            <div class="flex-grow text-left sm:text-center">
+                <div class="inline-flex items-center justify-start sm:justify-center">
                     <img src="assets/logo.png" 
                                 alt="Robust Media Player Logo" 
-                                class="h-8 w-8 mr-3" 
+                                class="h-6 w-6 sm:h-8 sm:w-8 mr-2 sm:mr-3" 
                                 aria-hidden="true" 
                                 onerror="this.style.display='none'">
-                    <h1 class="text-3xl sm:text-4xl font-extrabold text-link">Robust Media Player</h1>
+                    <h1 class="text-2xl sm:text-4xl font-extrabold text-link">Robust Media Player</h1>
                 </div>
-                <p class="mt-2 text-secondary">Load direct video/audio files or use external embeds.</p>
+                <p class="mt-1 sm:mt-2 text-sm text-secondary">Load direct video/audio files or use external embeds.</p>
             </div>
             
             <button id="themeToggle" 
-                    class="w-12 h-12 flex items-center justify-center rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex-shrink-0"
+                    class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex-shrink-0"
                     aria-label="Toggle Dark/Light Mode"
                     title="Toggle Dark/Light Mode">
                 <span id="moonIcon" class="icon icon-moon" aria-hidden="true">&#x1F319;</span> 
@@ -265,34 +276,34 @@
             </button>
         </header>
 
-        <div id="mainCard" class="container-card p-6 sm:p-8 rounded-xl relative">
+        <div id="mainCard" class="container-card p-4 sm:p-8 rounded-xl relative">
             
-            <div id="alertBox" class="hidden p-4 rounded-lg text-sm mb-6 shadow-xl flex items-center" role="alert" aria-live="assertive">
+            <div id="alertBox" class="hidden p-3 rounded-lg text-xs sm:text-sm mb-4 sm:mb-6 shadow-xl flex items-center" role="alert" aria-live="assertive">
                 <div class="flex items-center">
-                    <svg id="alertIcon" class="w-5 h-5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                    <svg id="alertIcon" class="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
                     <span id="alertText" class="font-medium"></span>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" role="group" aria-labelledby="control-group-label">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6" role="group" aria-labelledby="control-group-label">
                 <h2 id="control-group-label" class="sr-only">Media Loading Controls</h2>
                 
                 <div class="md:col-span-2">
-                    <label for="videoUrl" class="block text-sm font-medium text-secondary mb-1">Video/Embed URL</label>
+                    <label for="videoUrl" class="block text-xs sm:text-sm font-medium text-secondary mb-1">Video/Embed URL</label>
                     <div class="flex" role="search">
                         <input type="text" id="videoUrl" placeholder="Enter link, e.g., https://streamtape.com/e/ or direct mp4/mp3 link"
-                               class="flex-grow p-3 border rounded-l-lg input-style focus:ring-blue-500 focus:border-blue-500 outline-none"
+                               class="flex-grow p-2.5 sm:p-3 border rounded-l-lg input-style focus:ring-blue-500 focus:border-blue-500 outline-none"
                                aria-label="Media or Embed URL Input">
-                        <button id="loadUrlBtn" class="btn btn-primary px-4 py-3 text-white rounded-r-lg flex-shrink-0"
+                        <button id="loadUrlBtn" class="btn btn-primary px-4 py-2.5 sm:py-3 text-white rounded-r-lg flex-shrink-0"
                                      aria-label="Load Media or Embed Link">Load Link</button>
                     </div>
                 </div>
 
                 <div class="file-input-wrapper relative overflow-hidden inline-block w-full">
-                    <button class="btn btn-secondary w-full text-white py-3 rounded-lg shadow-md flex flex-col justify-center items-center"
+                    <button class="btn btn-secondary w-full text-white py-2.5 sm:py-3 rounded-lg shadow-md flex flex-col justify-center items-center"
                             aria-hidden="true" tabindex="-1">
-                        <div class="text-base">Load Local Media File</div>
-                        <span class="text-xs font-normal text-indigo-300 opacity-80 mt-1">Video (.mp4, .webm, .mkv, .avi, .mov) & Audio (.mp3, .wav, .flac)</span>
+                        <div class="text-sm sm:text-base">Load Local Media File</div>
+                        <span class="text-[10px] sm:text-xs font-normal text-indigo-300 opacity-80 mt-1">Video (.mp4, .webm, .mkv, .avi, .mov) & Audio (.mp3, .wav, .flac)</span>
                     </button>
                     <input type="file" id="videoFile" accept="video/*,audio/*" class="absolute inset-0 block"
                             aria-label="Select local video or audio file to load">
@@ -301,31 +312,31 @@
                 <div class="relative w-full">
                     <div class="grid grid-cols-5">
                         <div class="file-input-wrapper relative overflow-hidden inline-block col-span-4">
-                            <button class="btn btn-tertiary w-full text-white py-3 rounded-l-lg shadow-md flex flex-col justify-center items-center h-full"
+                            <button class="btn btn-tertiary w-full text-white py-2.5 sm:py-3 rounded-l-lg shadow-md flex flex-col justify-center items-center h-full"
                                          aria-hidden="true" tabindex="-1">
-                                <div class="text-base">Load Local Subtitle</div>
-                                <span class="text-xs font-normal text-green-300 opacity-80 mt-1">Subtitles (.vtt, .srt)</span>
+                                <div class="text-sm sm:text-base">Load Local Subtitle</div>
+                                <span class="text-[10px] sm:text-xs font-normal text-green-300 opacity-80 mt-1">Subtitles (.vtt, .srt)</span>
                             </button>
                             <input type="file" id="subtitleFile" accept=".vtt,.srt" class="absolute inset-0 block"
                                          aria-label="Select local subtitle file (VTT or SRT) to load">
                         </div>
                         <button id="subSettingsToggle" 
-                                 class="btn btn-tertiary text-white py-3 rounded-r-lg shadow-md flex items-center justify-center flex-shrink-0"
+                                 class="btn btn-tertiary text-white py-2.5 sm:py-3 rounded-r-lg shadow-md flex items-center justify-center flex-shrink-0"
                                  aria-label="Toggle Subtitle Appearance Settings"
                                  aria-controls="subSettingsPanel"
                                  aria-expanded="false">
-                            <span class="icon" style="color: white; transform: rotate(0deg); transition: transform 0.3s;" aria-hidden="true">&#x2699;</span>
+                            <span class="icon text-lg" style="color: white; transform: rotate(0deg); transition: transform 0.3s;" aria-hidden="true">&#x2699;</span>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div id="subSettingsPanel" class="mb-6 hidden border border-card-border shadow-md rounded-xl bg-card-bg" 
+            <div id="subSettingsPanel" class="mb-4 sm:mb-6 hidden border border-card-border shadow-md rounded-xl bg-card-bg" 
                  role="region" aria-labelledby="sub-settings-heading">
-                <div id="subSettingsContent" class="p-4">
-                    <h3 id="sub-settings-heading" class="text-lg font-semibold text-link mb-4">Subtitle Appearance Settings</h3>
+                <div id="subSettingsContent" class="p-3 sm:p-4">
+                    <h3 id="sub-settings-heading" class="text-base sm:text-lg font-semibold text-link mb-3">Subtitle Appearance Settings</h3>
                     
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
                         
                         <div class="setting-control">
                             <label for="subFontColor" class="text-secondary">Font Color</label>
@@ -335,7 +346,7 @@
                         
                         <div class="setting-control">
                             <label for="subFontFamily" class="text-secondary">Font Family</label>
-                            <select id="subFontFamily" class="w-full border rounded input-style text-sm"
+                            <select id="subFontFamily" class="w-full border rounded input-style"
                                          aria-label="Subtitle Font Family Selector">
                                 <option value="'Inter', sans-serif">Inter (Default)</option>
                                 <option value="'Roboto', sans-serif">Roboto (Clean Sans)</option>
@@ -361,7 +372,7 @@
 
 
             <div class="media-container rounded-xl shadow-2xl" role="region" aria-label="Media Player and Subtitle Preview Area">
-                <div id="subtitleDemo" class="absolute z-50 bottom-8 left-1/2 transform -translate-x-1/2 p-2 pointer-events-none transition-all duration-300 ease-in-out text-center hidden max-w-full"
+                <div id="subtitleDemo" class="absolute z-50 bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 p-2 pointer-events-none transition-all duration-300 ease-in-out text-center hidden max-w-full"
                          aria-live="polite" aria-atomic="true">
                     <span id="demoText" style="white-space: nowrap; padding: 6px 12px; border-radius: 6px; display: inline-block; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);">The quick brown fox jumps over the lazy dog</span>
                 </div>
@@ -369,8 +380,8 @@
                 <div id="dragDropOverlay" class="absolute inset-0 z-10 hidden flex-col items-center justify-center 
                                                  bg-gray-900/90 border-4 border-dashed border-blue-500 rounded-xl transition duration-150 ease-in-out pointer-events-none"
                                                  aria-hidden="true">
-                    <p class="text-3xl text-blue-300 font-bold mb-2">Drop File Here</p>
-                    <p class="text-lg text-gray-400">(Video, Audio, .VTT, or .SRT)</p>
+                    <p class="text-xl sm:text-3xl text-blue-300 font-bold mb-2">Drop File Here</p>
+                    <p class="text-sm sm:text-lg text-gray-400">(Video, Audio, .VTT, or .SRT)</p>
                 </div>
                 
                 <video id="videoPlayer" controls preload="auto" poster="https://placehold.co/800x450/1f2937/a0aec0?text=Ready+to+Load+Media"
@@ -383,7 +394,7 @@
                 </iframe>
             </div>
 
-            <div id="statusMessage" class="mt-4 text-center text-sm p-3 rounded-lg status-box" role="status" aria-live="polite">
+            <div id="statusMessage" class="mt-4 text-center text-xs sm:text-sm p-3 rounded-lg status-box" role="status" aria-live="polite">
                 Ready to load content. Drag and drop a file onto the player area above!
             </div>
 
@@ -553,10 +564,9 @@
             const demoBgColor = 'transparent'; 
             
             // FIX: Calculate proportional demo size based on viewport width (vw) for full-screen proportionality.
-            // Using a lower minimum clamp (0.5vw instead of 1.0vw) allows smaller font sizes to be visually distinct.
+            // Using a lower minimum clamp (0.5vw) allows the 2px-20px range to be visually distinct.
             // Formula: (rawFontSize / 100) * 5
             const proportionalSize = (parseInt(rawFontSize) / 100) * 5; 
-            // FIX: Lower the minimum clamp to see smaller size changes (e.g., 2px is 0.1vw, 20px is 1.0vw)
             const demoFontSize = Math.max(0.5, Math.min(6.0, proportionalSize)); 
             
             // --- 1. Apply to actual ::cue element (via dynamic style tag) ---
@@ -640,7 +650,7 @@
             }
 
             // Reset classes
-            alertBox.className = "hidden p-4 rounded-lg text-sm mb-6 shadow-xl flex items-center";
+            alertBox.className = "hidden p-3 rounded-lg text-xs sm:text-sm mb-4 sm:mb-6 shadow-xl flex items-center";
             alertIcon.innerHTML = ''; // Clear icon content
             alertBox.classList.remove('bg-red-900', 'text-red-300', 'border-red-700', 'bg-yellow-900', 'text-yellow-300', 'border-yellow-700', 'bg-green-900', 'text-green-300', 'border-green-700');
 
