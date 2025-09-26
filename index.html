@@ -6,7 +6,6 @@
     <meta name="google-site-verification" content="iExbroKtO4ZRq3ZjUsyY8JJowXvx-yHOy4yQq0iS6vY" />
     <title>Robust Media Player</title>
     
-    <!-- SEO and PWA Configuration (Enhanced) -->
     <meta name="description" content="A robust, single-file media player supporting local files, external links, subtitles, and extensive subtitle customization.">
     <meta name="keywords" content="robust player, robust media player, rmp, media player, video player, audio player, local player, local media player, local video player with subs, subtitle customizer, VTT, SRT, local media">
     
@@ -15,7 +14,6 @@
     <link rel="icon" type="image/png" sizes="16x16" href="assets/logo.png">
     <link rel="shortcut icon" href="assets/logo.png">
     
-    <!-- Apple Touch Icons (For iOS Home Screen) -->
     <link rel="apple-touch-icon" href="assets/logo.png">
     <link rel="apple-touch-icon" sizes="76x76" href="assets/logo.png">
     <link rel="apple-touch-icon" sizes="120x120" href="assets/logo.png">
@@ -29,19 +27,14 @@
     <meta name="msapplication-TileImage" content="assets/logo.png">
     <meta name="msapplication-TileColor" content="#3b82f6">
     <meta name="theme-color" id="theme-color-meta" content="#3b82f6">
-    <!-- End Branding & PWA Configuration -->
-
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome CDN for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LKOBM0BdHUwbPv3dW/qzrDMgwAoTKNfm7Vgoh2d7Zn+OcQl6yy9oTjqFg6N6rkT6g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     
-    <!-- Deferred loading of custom subtitle fonts for better page speed -->
     <link rel="preload" 
           href="https://fonts.googleapis.com/css2?family=Fira+Sans&family=Inter:wght@400;600&family=Lato&family=Montserrat&family=Open+Sans&family=PT+Serif&family=Roboto&family=Source+Sans+Pro&display=swap" 
           as="style" 
           onload="this.onload=null;this.rel='stylesheet'">
     
-    <!-- Dynamic CSS for Subtitle Styling will be injected here by JavaScript -->
     <style id="subtitle-style"></style>
     
     <style>
@@ -101,6 +94,23 @@
             border: 1px solid var(--card-border);
             color: var(--text-secondary);
         }
+        
+        /* FIX: Ensure fas icons are visible and correctly sized/colored */
+        .fas, .fa-solid, .fa-moon, .fa-sun, .fa-cog {
+            /* Override Tailwind's base color/size if it's too aggressive */
+            font-size: 1.25rem !important;
+            color: var(--text-primary) !important;
+            /* Ensure font-family is correctly picked up for fas */
+            font-family: "Font Awesome 6 Solid" !important;
+        }
+
+        /* FIX: Header/Theme Toggle button theming for consistency */
+        #themeToggle {
+            /* Apply general card styles for consistent look in both modes */
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
 
         /* --- Component Specific Styles --- */
         .media-container {
@@ -132,10 +142,7 @@
             border: 1px solid transparent;
             font-weight: 600;
         }
-        /* Font Awesome icon size */
-        .fas {
-            font-size: 1.5rem; /* Equivalent to w-6 h-6 */
-        }
+        
         /* Primary (Load Link) - Blue stays consistent */
         .btn-primary {
             background-color: #2563eb;
@@ -163,72 +170,95 @@
             background-color: #059669;
             box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
         }
-        /* Custom slider track styling for better visibility */
+        
+        /* FIX: Remove ugly grey box around font size slider by customizing the track */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent; /* Remove default track background */
+            cursor: pointer;
+            height: 16px; /* Give it a set height */
+        }
+        input[type="range"]:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--link-color);
+            border-radius: 4px;
+        }
+        
+        /* Webkit (Chrome, Safari, Edge) */
         input[type="range"]::-webkit-slider-runnable-track {
             height: 8px;
-            background: var(--input-border);
+            /* Use a themed color instead of a hardcoded ugly grey */
+            background: var(--input-border); 
             border-radius: 4px;
-            border: 0.5px solid var(--card-border);
+            border: none;
         }
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             height: 16px;
             width: 16px;
             border-radius: 50%;
-            background: #3b82f6; /* Blue-500 */
+            background: var(--link-color);
             cursor: pointer;
             margin-top: -4px;
             border: 2px solid var(--card-bg);
         }
+        
+        /* Mozilla (Firefox) */
+        input[type="range"]::-moz-range-track {
+            height: 8px;
+            background: var(--input-border);
+            border-radius: 4px;
+            border: none;
+        }
+        input[type="range"]::-moz-range-thumb {
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--link-color);
+            cursor: pointer;
+            border: 2px solid var(--card-bg);
+        }
+
     </style>
 </head>
 <body class="p-4 sm:p-8 min-h-screen">
 
-    <!-- Main landmark wrapper with role="main" -->
     <div id="app" class="max-w-5xl mx-auto" role="main">
         <header class="text-center mb-8 flex items-center justify-between">
             <div class="flex-grow text-center">
-                <!-- Logo and Title Container -->
                 <div class="inline-flex items-center justify-center">
                     <img src="assets/logo.png" 
-                            alt="Robust Media Player Logo" 
-                            class="h-8 w-8 mr-3" 
-                            aria-hidden="true" 
-                            onerror="this.style.display='none'">
+                                alt="Robust Media Player Logo" 
+                                class="h-8 w-8 mr-3" 
+                                aria-hidden="true" 
+                                onerror="this.style.display='none'">
                     <h1 class="text-3xl sm:text-4xl font-extrabold text-link">Robust Media Player</h1>
                 </div>
                 <p class="mt-2 text-secondary">Load direct video/audio files or use external embeds.</p>
             </div>
             
-            <!-- Theme Toggle Button with ARIA attributes -->
             <button id="themeToggle" 
-                    class="w-12 h-12 flex items-center justify-center rounded-full border border-card-border bg-card-bg shadow-lg hover:shadow-xl transition-colors duration-300 flex-shrink-0"
+                    class="w-12 h-12 flex items-center justify-center rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex-shrink-0"
                     aria-label="Toggle Dark/Light Mode"
                     title="Toggle Dark/Light Mode">
-                <!-- Moon Icon -->
-                <i id="moonIcon" class="fas fa-moon text-gray-400" aria-hidden="true"></i>
-                <!-- Sun Icon -->
-                <i id="sunIcon" class="fas fa-sun text-gray-400 hidden" aria-hidden="true"></i>
+                <i id="moonIcon" class="fa-solid fa-moon fas" aria-hidden="true"></i>
+                <i id="sunIcon" class="fa-solid fa-sun fas hidden" aria-hidden="true"></i>
             </button>
         </header>
 
-        <!-- Main Card Container (Drag Target) -->
         <div id="mainCard" class="container-card p-6 sm:p-8 rounded-xl relative">
             
-            <!-- Error/Warning Alert Box - Role="alert" makes it announce immediately -->
             <div id="alertBox" class="hidden p-4 rounded-lg text-sm mb-6 shadow-xl flex items-center" role="alert" aria-live="assertive">
                 <div class="flex items-center">
-                    <!-- Icon is decorative (aria-hidden) -->
                     <svg id="alertIcon" class="w-5 h-5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
                     <span id="alertText" class="font-medium"></span>
                 </div>
             </div>
 
-            <!-- Control Panel -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" role="group" aria-labelledby="control-group-label">
                 <h2 id="control-group-label" class="sr-only">Media Loading Controls</h2>
                 
-                <!-- Video URL Input (2/2 width) -->
                 <div class="md:col-span-2">
                     <label for="videoUrl" class="block text-sm font-medium text-secondary mb-1">Video/Embed URL</label>
                     <div class="flex" role="search">
@@ -236,67 +266,58 @@
                                class="flex-grow p-3 border rounded-l-lg input-style focus:ring-blue-500 focus:border-blue-500 outline-none"
                                aria-label="Media or Embed URL Input">
                         <button id="loadUrlBtn" class="btn btn-primary px-4 py-3 text-white rounded-r-lg flex-shrink-0"
-                                 aria-label="Load Media or Embed Link">Load Link</button>
+                                     aria-label="Load Media or Embed Link">Load Link</button>
                     </div>
                 </div>
 
-                <!-- Load Local Media File (1/2 width) -->
                 <div class="file-input-wrapper relative overflow-hidden inline-block w-full">
                     <button class="btn btn-secondary w-full text-white py-3 rounded-lg shadow-md flex flex-col justify-center items-center"
                             aria-hidden="true" tabindex="-1">
                         <div class="text-base">Load Local Media File</div>
                         <span class="text-xs font-normal text-indigo-300 opacity-80 mt-1">Video (.mp4, .webm, .mkv, .avi, .mov) & Audio (.mp3, .wav, .flac)</span>
                     </button>
-                    <!-- Input is the actual focusable element -->
                     <input type="file" id="videoFile" accept="video/*,audio/*" class="absolute inset-0 block"
                             aria-label="Select local video or audio file to load">
                 </div>
 
-                <!-- Load Subtitle File (1/2 width) -->
                 <div class="relative w-full">
                     <div class="grid grid-cols-5">
                         <div class="file-input-wrapper relative overflow-hidden inline-block col-span-4">
                             <button class="btn btn-tertiary w-full text-white py-3 rounded-l-lg shadow-md flex flex-col justify-center items-center h-full"
-                                    aria-hidden="true" tabindex="-1">
+                                         aria-hidden="true" tabindex="-1">
                                 <div class="text-base">Load Local Subtitle</div>
                                 <span class="text-xs font-normal text-green-300 opacity-80 mt-1">Subtitles (.vtt, .srt)</span>
                             </button>
-                            <!-- Input is the actual focusable element -->
                             <input type="file" id="subtitleFile" accept=".vtt,.srt" class="absolute inset-0 block"
-                                    aria-label="Select local subtitle file (VTT or SRT) to load">
+                                         aria-label="Select local subtitle file (VTT or SRT) to load">
                         </div>
-                        <!-- Subtitle Settings Toggle with ARIA attributes -->
                         <button id="subSettingsToggle" 
-                                class="btn btn-tertiary text-white py-3 rounded-r-lg shadow-md flex items-center justify-center flex-shrink-0"
-                                aria-label="Toggle Subtitle Appearance Settings"
-                                aria-controls="subSettingsPanel"
-                                aria-expanded="false">
-                            <i class="fas fa-cog text-gray-100 text-lg transition-transform duration-300" aria-hidden="true"></i>
+                                 class="btn btn-tertiary text-white py-3 rounded-r-lg shadow-md flex items-center justify-center flex-shrink-0"
+                                 aria-label="Toggle Subtitle Appearance Settings"
+                                 aria-controls="subSettingsPanel"
+                                 aria-expanded="false">
+                            <i class="fa-solid fa-cog fas text-white transition-transform duration-300" aria-hidden="true"></i>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Subtitle Customization Panel (Collapsible) -->
             <div id="subSettingsPanel" class="mb-6 hidden border border-card-border shadow-md rounded-xl bg-card-bg" 
                  role="region" aria-labelledby="sub-settings-heading">
-                <!-- Collapsible Content -->
                 <div id="subSettingsContent" class="p-4">
                     <h3 id="sub-settings-heading" class="text-lg font-semibold text-link mb-3">Subtitle Appearance Settings</h3>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
                         
-                        <!-- Font Color -->
                         <div>
                             <label for="subFontColor" class="block text-secondary mb-1">Font Color</label>
                             <input type="color" id="subFontColor" class="w-full h-8 p-0 border-none rounded input-style cursor-pointer" value="#ffffff"
-                                    aria-label="Subtitle Font Color Picker">
+                                     aria-label="Subtitle Font Color Picker">
                         </div>
                         
-                        <!-- Font Family -->
                         <div class="col-span-1">
                             <label for="subFontFamily" class="block text-secondary mb-1">Font Family</label>
                             <select id="subFontFamily" class="w-full p-1.5 border rounded input-style text-sm"
-                                     aria-label="Subtitle Font Family Selector">
+                                         aria-label="Subtitle Font Family Selector">
                                 <option value="'Inter', sans-serif">Inter (Default)</option>
                                 <option value="'Roboto', sans-serif">Roboto (Clean Sans)</option>
                                 <option value="'Open Sans', sans-serif">Open Sans (Open, Legible)</option>
@@ -309,27 +330,23 @@
                             </select>
                         </div>
 
-                        <!-- Font Size (Slider 2px to 60px) -->
                         <div class="col-span-1">
                             <label for="subFontSize" class="block text-secondary mb-1">Font Size (<span id="currentFontSize">24px</span>)</label>
-                            <input type="range" id="subFontSize" min="2" max="60" value="24" step="1"
-                                   class="w-full h-8 appearance-none bg-gray-600 rounded-lg cursor-pointer range-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                                   aria-label="Subtitle Font Size Slider, minimum 2 pixels, maximum 60 pixels">
+                            <input type="range" id="subFontSize" min="2" max="100" value="24" step="1"
+                                     class="w-full h-8 cursor-pointer"
+                                     aria-label="Subtitle Font Size Slider, minimum 2 pixels, maximum 100 pixels">
                         </div>
                     </div>
                 </div>
             </div>
 
 
-            <!-- Video Player Area - Container switches content based on URL type -->
             <div class="media-container rounded-xl shadow-2xl" role="region" aria-label="Media Player and Subtitle Preview Area">
-                <!-- LIVE SUBTITLE DEMO OVERLAY - HIDDEN BY DEFAULT (Only visible when settings panel is open) -->
-                <div id="subtitleDemo" class="absolute z-50 bottom-4 left-1/2 transform -translate-x-1/2 p-2 pointer-events-none transition-all duration-300 ease-in-out text-center hidden"
-                        aria-live="polite" aria-atomic="true">
-                    <span id="demoText" style="white-space: nowrap; padding: 4px 8px; border-radius: 4px; display: inline-block;">The quick brown fox jumps over the lazy dog</span>
+                <div id="subtitleDemo" class="absolute z-50 bottom-8 left-1/2 transform -translate-x-1/2 p-2 pointer-events-none transition-all duration-300 ease-in-out text-center hidden max-w-full"
+                         aria-live="polite" aria-atomic="true">
+                    <span id="demoText" style="white-space: nowrap; padding: 6px 12px; border-radius: 6px; display: inline-block; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);">The quick brown fox jumps over the lazy dog</span>
                 </div>
 
-                <!-- Drag & Drop Overlay is visual only -->
                 <div id="dragDropOverlay" class="absolute inset-0 z-10 hidden flex-col items-center justify-center 
                                                  bg-gray-900/90 border-4 border-dashed border-blue-500 rounded-xl transition duration-150 ease-in-out pointer-events-none"
                                                  aria-hidden="true">
@@ -337,20 +354,16 @@
                     <p class="text-lg text-gray-400">(Video, Audio, .VTT, or .SRT)</p>
                 </div>
                 
-                <!-- HTML5 Video Player -->
                 <video id="videoPlayer" controls preload="auto" poster="https://placehold.co/800x450/1f2937/a0aec0?text=Ready+to+Load+Media"
                         aria-label="HTML5 Video Player for local media">
-                    <!-- Tracks will be dynamically added here -->
-                </video>
+                    </video>
                 
-                <!-- Iframe Player -->
                 <iframe id="iframePlayer" style="display: none;" 
                         allowfullscreen allowtransparency allow="autoplay" scrolling="no" frameborder="0"
                         aria-label="External Video Embed Player">
                 </iframe>
             </div>
 
-            <!-- Status Message - Live region for user updates -->
             <div id="statusMessage" class="mt-4 text-center text-sm p-3 rounded-lg status-box" role="status" aria-live="polite">
                 Ready to load content. Drag and drop a file onto the player area above!
             </div>
@@ -401,8 +414,6 @@
 
         /**
          * Helper function to convert hex color to RGBA format.
-         * NOTE: This is no longer used for subtitle background but remains in case other
-         * RGBA utility is needed.
          */
         function hexToRgba(hex, alpha) {
             // Remove the # if it exists
@@ -484,8 +495,8 @@
             
             // Set slider value: read the number part (e.g., '24px' -> 24)
             const sizeInPixels = parseInt(settings.fontSize.replace('px', '')) || 24;
-            // Clamp the value to the slider's min/max range for safety (2px to 60px)
-            subFontSizeInput.value = Math.max(2, Math.min(60, sizeInPixels)); 
+            // Clamp the value to the slider's min/max range for safety (2px to 100px)
+            subFontSizeInput.value = Math.max(2, Math.min(100, sizeInPixels)); 
 
             subFontFamilyInput.value = settings.fontFamily;
             
@@ -498,6 +509,7 @@
 
         /**
          * Reads current input values, saves them to localStorage, and updates the ::cue CSS rule AND the live demo.
+         * FIX: Updates demo text size to be proportional to screen size.
          */
         function applySubtitleStyles() {
             // Read raw value (number string from slider)
@@ -522,6 +534,13 @@
             const cueBgColor = 'transparent'; 
             const demoBgColor = 'transparent'; 
             
+            // FIX: Calculate proportional demo size based on viewport width (vw) for full-screen proportionality.
+            // 100px size is max. We want to scale a 100px font to roughly 5vw (e.g., on a large screen).
+            // Example: 100px -> 5vw. 24px -> 1.2vw. Formula: (rawFontSize / 100) * 5
+            const proportionalSize = (parseInt(rawFontSize) / 100) * 5; 
+            // Clamp the demo size for readability
+            const demoFontSize = Math.max(1.0, Math.min(6.0, proportionalSize)); 
+            
             // --- 1. Apply to actual ::cue element (via dynamic style tag) ---
             const cssRule = `
                 video::cue {
@@ -529,16 +548,17 @@
                     background-color: ${cueBgColor} !important;
                     font-size: ${settings.fontSize} !important;
                     font-family: ${settings.fontFamily} !important;
-                    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6); 
+                    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8); 
                 }
             `;
             subtitleStyleSheet.textContent = cssRule;
 
-            // --- 2. Apply to LIVE DEMO overlay ---
+            // --- 2. Apply to LIVE DEMO overlay (uses vw units for proportionality) ---
             demoText.style.color = settings.fontColor;
             demoText.style.backgroundColor = demoBgColor;
-            demoText.style.fontSize = settings.fontSize;
+            demoText.style.fontSize = demoFontSize + 'vw'; /* Use VW for proportional sizing */
             demoText.style.fontFamily = settings.fontFamily;
+            demoText.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.8)';
         }
 
         // Attach event listeners to non-slider controls on change
