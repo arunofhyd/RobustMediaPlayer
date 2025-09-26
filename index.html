@@ -6,7 +6,17 @@
     <title>Robust Media Player</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome CDN for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLMD/cdjN+KDRzH8j9w2b41Fk5y0Y+C1Yd8s8eU2v6S8p0CjD1+8e+xP8u+A+Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLMD/cdjN+KDRzH8j9w2b41Fk5y0Y+C1Yd8s8eU2v6S8p0CjD1+e+xP8u+A+Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <!-- Deferred loading of custom subtitle fonts for better page speed -->
+    <link rel="preload" 
+          href="https://fonts.googleapis.com/css2?family=Fira+Sans&family=Inter:wght@400;600&family=Lato&family=Montserrat&family=Open+Sans&family=PT+Serif&family=Roboto&family=Source+Sans+Pro&display=swap" 
+          as="style" 
+          onload="this.onload=null;this.rel='stylesheet'">
+    
+    <!-- Dynamic CSS for Subtitle Styling will be injected here by JavaScript -->
+    <style id="subtitle-style"></style>
+    
     <style>
         /* --- CSS Custom Properties for Theming --- */
         :root {
@@ -19,6 +29,7 @@
             --input-bg: #3f3f46; /* gray-700 */
             --input-border: #52525b; /* gray-600 */
             --link-color: #60a5fa; /* blue-400 */
+            --sub-bg-color: rgba(0, 0, 0, 0.1);
         }
 
         .light-mode {
@@ -31,6 +42,7 @@
             --input-bg: #f9f9fb;
             --input-border: #e4e4e7;
             --link-color: #2563eb; /* blue-600 */
+            --sub-bg-color: rgba(255, 255, 255, 0.1);
         }
 
         /* --- Global Styles using Custom Properties --- */
@@ -66,10 +78,12 @@
         /* --- Component Specific Styles --- */
         .media-container {
             position: relative;
+            /* Ensures 16:9 aspect ratio */
             aspect-ratio: 16 / 9;
             background-color: #000;
             border-radius: 0.5rem;
             overflow: hidden;
+            width: 100%; /* Ensure it always takes full container width */
         }
         .media-container > * {
             position: absolute;
@@ -126,87 +140,186 @@
 </head>
 <body class="p-4 sm:p-8 min-h-screen">
 
-    <div id="app" class="max-w-4xl mx-auto">
+    <!-- Main landmark wrapper with role="main" -->
+    <div id="app" class="max-w-5xl mx-auto" role="main">
         <header class="text-center mb-8 flex items-center justify-between">
             <div class="flex-grow text-center">
                 <h1 class="text-3xl sm:text-4xl font-extrabold text-link">Robust Media Player</h1>
                 <p class="mt-2 text-secondary">Load direct video/audio files or use external embeds.</p>
             </div>
             
-            <!-- Theme Toggle Button: Fixed size (w-12 h-12) and centered content for constant shape -->
-            <button id="themeToggle" class="w-12 h-12 flex items-center justify-center rounded-full border border-card-border bg-card-bg shadow-lg hover:shadow-xl transition-colors duration-300">
-                <!-- Moon Icon (Muted color) -->
-                <i id="moonIcon" class="fas fa-moon text-gray-400"></i>
-                <!-- Sun Icon (Muted color) -->
-                <i id="sunIcon" class="fas fa-sun text-gray-400 hidden"></i>
+            <!-- Theme Toggle Button with ARIA attributes -->
+            <button id="themeToggle" 
+                    class="w-12 h-12 flex items-center justify-center rounded-full border border-card-border bg-card-bg shadow-lg hover:shadow-xl transition-colors duration-300 flex-shrink-0"
+                    aria-label="Toggle Dark/Light Mode"
+                    title="Toggle Dark/Light Mode">
+                <!-- Moon Icon -->
+                <i id="moonIcon" class="fas fa-moon text-gray-400" aria-hidden="true"></i>
+                <!-- Sun Icon -->
+                <i id="sunIcon" class="fas fa-sun text-gray-400 hidden" aria-hidden="true"></i>
             </button>
         </header>
 
         <!-- Main Card Container (Drag Target) -->
         <div id="mainCard" class="container-card p-6 sm:p-8 rounded-xl relative">
             
-            <!-- Error/Warning Alert Box -->
-            <div id="alertBox" class="hidden p-4 rounded-lg text-sm mb-6 shadow-xl flex items-center" role="alert">
+            <!-- Error/Warning Alert Box - Role="alert" makes it announce immediately -->
+            <div id="alertBox" class="hidden p-4 rounded-lg text-sm mb-6 shadow-xl flex items-center" role="alert" aria-live="assertive">
                 <div class="flex items-center">
-                    <!-- Icon is dynamically set by JS -->
-                    <svg id="alertIcon" class="w-5 h-5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                    <!-- Icon is decorative (aria-hidden) -->
+                    <svg id="alertIcon" class="w-5 h-5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
                     <span id="alertText" class="font-medium"></span>
                 </div>
             </div>
 
             <!-- Control Panel -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" role="group" aria-labelledby="control-group-label">
+                <h2 id="control-group-label" class="sr-only">Media Loading Controls</h2>
+                
                 <!-- Video URL Input (2/2 width) -->
                 <div class="md:col-span-2">
                     <label for="videoUrl" class="block text-sm font-medium text-secondary mb-1">Video/Embed URL</label>
-                    <div class="flex">
+                    <div class="flex" role="search">
                         <input type="text" id="videoUrl" placeholder="Enter link, e.g., https://streamtape.com/e/ or direct mp4/mp3 link"
-                               class="flex-grow p-3 border rounded-l-lg input-style focus:ring-blue-500 focus:border-blue-500 outline-none">
-                        <button id="loadUrlBtn" class="btn btn-primary px-4 py-3 text-white rounded-r-lg">Load Link</button>
+                               class="flex-grow p-3 border rounded-l-lg input-style focus:ring-blue-500 focus:border-blue-500 outline-none"
+                               aria-label="Media or Embed URL Input">
+                        <button id="loadUrlBtn" class="btn btn-primary px-4 py-3 text-white rounded-r-lg flex-shrink-0"
+                                aria-label="Load Media or Embed Link">Load Link</button>
                     </div>
                 </div>
 
                 <!-- Load Local Media File (1/2 width) -->
                 <div class="file-input-wrapper relative overflow-hidden inline-block w-full">
-                    <button class="btn btn-secondary w-full text-white py-3 rounded-lg shadow-md flex flex-col justify-center items-center">
+                    <button class="btn btn-secondary w-full text-white py-3 rounded-lg shadow-md flex flex-col justify-center items-center"
+                            aria-hidden="true" tabindex="-1">
                         <div class="text-base">Load Local Media File</div>
                         <span class="text-xs font-normal text-indigo-300 opacity-80 mt-1">Video (.mp4, .webm, .mkv, .avi, .mov) & Audio (.mp3, .wav, .flac)</span>
                     </button>
-                    <input type="file" id="videoFile" accept="video/*,audio/*" class="absolute inset-0 block">
+                    <!-- Input is the actual focusable element -->
+                    <input type="file" id="videoFile" accept="video/*,audio/*" class="absolute inset-0 block"
+                           aria-label="Select local video or audio file to load">
                 </div>
 
                 <!-- Load Subtitle File (1/2 width) -->
-                <div class="file-input-wrapper relative overflow-hidden inline-block w-full">
-                    <button class="btn btn-tertiary w-full text-white py-3 rounded-lg shadow-md flex flex-col justify-center items-center">
-                        <div class="text-base">Load Local Subtitle</div>
-                        <span class="text-xs font-normal text-green-300 opacity-80 mt-1">Subtitles (.vtt, .srt)</span>
-                    </button>
-                    <input type="file" id="subtitleFile" accept=".vtt,.srt" class="absolute inset-0 block">
+                <div class="relative w-full">
+                    <div class="grid grid-cols-5">
+                        <div class="file-input-wrapper relative overflow-hidden inline-block col-span-4">
+                            <button class="btn btn-tertiary w-full text-white py-3 rounded-l-lg shadow-md flex flex-col justify-center items-center h-full"
+                                    aria-hidden="true" tabindex="-1">
+                                <div class="text-base">Load Local Subtitle</div>
+                                <span class="text-xs font-normal text-green-300 opacity-80 mt-1">Subtitles (.vtt, .srt)</span>
+                            </button>
+                            <!-- Input is the actual focusable element -->
+                            <input type="file" id="subtitleFile" accept=".vtt,.srt" class="absolute inset-0 block"
+                                   aria-label="Select local subtitle file (VTT or SRT) to load">
+                        </div>
+                        <!-- Subtitle Settings Toggle with ARIA attributes -->
+                        <button id="subSettingsToggle" 
+                                class="btn btn-tertiary text-white py-3 rounded-r-lg shadow-md flex items-center justify-center flex-shrink-0"
+                                aria-label="Toggle Subtitle Appearance Settings"
+                                aria-controls="subSettingsPanel"
+                                aria-expanded="false">
+                            <i class="fas fa-cog text-gray-100 text-lg transition-transform duration-300" aria-hidden="true"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
+            <!-- Subtitle Customization Panel (Collapsible) -->
+            <div id="subSettingsPanel" class="mb-6 hidden border border-card-border shadow-md rounded-xl bg-card-bg" 
+                 role="region" aria-labelledby="sub-settings-heading">
+                <!-- Collapsible Content -->
+                <div id="subSettingsContent" class="p-4">
+                    <h3 id="sub-settings-heading" class="text-lg font-semibold text-link mb-3">Subtitle Appearance Settings</h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                        
+                        <div>
+                            <label for="subFontColor" class="block text-secondary mb-1">Font Color</label>
+                            <input type="color" id="subFontColor" class="w-full h-8 p-0 border-none rounded input-style cursor-pointer" value="#ffffff"
+                                   aria-label="Subtitle Font Color Picker">
+                        </div>
+                        
+                        <div>
+                            <label for="subBackgroundType" class="block text-secondary mb-1">Background</label>
+                            <select id="subBackgroundType" class="w-full p-1.5 border rounded input-style text-sm"
+                                    aria-label="Subtitle Background Type">
+                                <option value="solid">Solid Black</option>
+                                <option value="transparent">Transparent</option>
+                                <option value="custom">Custom Color</option>
+                            </select>
+                        </div>
+                        
+                        <div id="subBackgroundColorContainer" class="col-span-1 hidden">
+                            <label for="subBackgroundColor" class="block text-secondary mb-1">Custom Color</label>
+                            <input type="color" id="subBackgroundColor" class="w-full h-8 p-0 border-none rounded input-style cursor-pointer" value="#000000"
+                                   aria-label="Custom Subtitle Background Color Picker">
+                        </div>
+
+                        <div class="col-span-1">
+                            <label for="subFontSize" class="block text-secondary mb-1">Font Size</label>
+                            <select id="subFontSize" class="w-full p-1.5 border rounded input-style text-sm"
+                                    aria-label="Subtitle Font Size Selector">
+                                <option value="16px">Tiny (16px)</option>
+                                <option value="20px">Small (20px)</option>
+                                <option value="24px" selected>Medium (24px)</option>
+                                <option value="28px">Large (28px)</option>
+                                <option value="32px">X-Large (32px)</option>
+                                <option value="38px">Huge (38px)</option>
+                                <option value="44px">Max (44px)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-span-1">
+                            <label for="subFontFamily" class="block text-secondary mb-1">Font Family</label>
+                            <select id="subFontFamily" class="w-full p-1.5 border rounded input-style text-sm"
+                                    aria-label="Subtitle Font Family Selector">
+                                <option value="'Inter', sans-serif">Inter (Default)</option>
+                                <option value="'Roboto', sans-serif">Roboto (Clean Sans)</option>
+                                <option value="'Open Sans', sans-serif">Open Sans (Open, Legible)</option>
+                                <option value="'Lato', sans-serif">Lato (High Contrast)</option>
+                                <option value="'Montserrat', sans-serif">Montserrat (Modern)</option>
+                                <option value="'Source Sans Pro', sans-serif">Source Sans Pro (Geometric)</option>
+                                <option value="'PT Serif', serif">PT Serif (Classic Serif)</option>
+                                <option value="'Fira Sans', sans-serif">Fira Sans (Accessibility)</option>
+                                <option value="'Courier New', monospace">Courier New (Monospace)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
             <!-- Video Player Area - Container switches content based on URL type -->
-            <div class="media-container rounded-xl shadow-2xl">
-                <!-- Drag & Drop Overlay -->
+            <div class="media-container rounded-xl shadow-2xl" role="region" aria-label="Media Player and Subtitle Preview Area">
+                <!-- LIVE SUBTITLE DEMO OVERLAY - Set as live region so changes are announced -->
+                <div id="subtitleDemo" class="absolute z-50 bottom-4 left-1/2 transform -translate-x-1/2 p-2 pointer-events-none transition-all duration-300 ease-in-out text-center"
+                     aria-live="polite" aria-atomic="true">
+                    <span id="demoText" style="white-space: nowrap; padding: 4px 8px; border-radius: 4px; display: inline-block;">The quick brown fox jumps over the lazy dog</span>
+                </div>
+
+                <!-- Drag & Drop Overlay is visual only -->
                 <div id="dragDropOverlay" class="absolute inset-0 z-10 hidden flex-col items-center justify-center 
-                                                  bg-gray-900/90 border-4 border-dashed border-blue-500 rounded-xl transition duration-150 ease-in-out pointer-events-none">
+                                                  bg-gray-900/90 border-4 border-dashed border-blue-500 rounded-xl transition duration-150 ease-in-out pointer-events-none"
+                                                  aria-hidden="true">
                     <p class="text-3xl text-blue-300 font-bold mb-2">Drop File Here</p>
                     <p class="text-lg text-gray-400">(Video, Audio, .VTT, or .SRT)</p>
                 </div>
                 
-                <!-- HTML5 Video Player (visible for local/direct media files) -->
-                <video id="videoPlayer" controls preload="auto" poster="https://placehold.co/800x450/1f2937/a0aec0?text=Ready+to+Load+Media">
+                <!-- HTML5 Video Player -->
+                <video id="videoPlayer" controls preload="auto" poster="https://placehold.co/800x450/1f2937/a0aec0?text=Ready+to+Load+Media"
+                       aria-label="HTML5 Video Player for local media">
                     <!-- Tracks will be dynamically added here -->
                 </video>
                 
-                <!-- Iframe Player (visible for external embed links) -->
+                <!-- Iframe Player -->
                 <iframe id="iframePlayer" style="display: none;" 
-                        allowfullscreen allowtransparency allow="autoplay" scrolling="no" frameborder="0">
+                        allowfullscreen allowtransparency allow="autoplay" scrolling="no" frameborder="0"
+                        aria-label="External Video Embed Player">
                 </iframe>
             </div>
 
-            <!-- Status Message -->
-            <div id="statusMessage" class="mt-4 text-center text-sm p-3 rounded-lg status-box">
+            <!-- Status Message - Live region for user updates -->
+            <div id="statusMessage" class="mt-4 text-center text-sm p-3 rounded-lg status-box" role="status" aria-live="polite">
                 Ready to load content. Drag and drop a file onto the player area above!
             </div>
 
@@ -232,9 +345,29 @@
         const themeToggle = document.getElementById('themeToggle');
         const sunIcon = document.getElementById('sunIcon');
         const moonIcon = document.getElementById('moonIcon');
+        const subtitleStyleSheet = document.getElementById('subtitle-style');
+        
+        // Subtitle customization DOM elements
+        const subSettingsToggle = document.getElementById('subSettingsToggle'); // Now the gear button
+        const subSettingsPanel = document.getElementById('subSettingsPanel');
+        
+        // Demo elements
+        const subtitleDemo = document.getElementById('subtitleDemo');
+        const demoText = document.getElementById('demoText');
+        
+        // Input elements
+        const subFontColorInput = document.getElementById('subFontColor');
+        const subBackgroundTypeInput = document.getElementById('subBackgroundType');
+        const subBackgroundColorContainer = document.getElementById('subBackgroundColorContainer');
+        const subBackgroundColorInput = document.getElementById('subBackgroundColor');
+        const subFontSizeInput = document.getElementById('subFontSize');
+        const subFontFamilyInput = document.getElementById('subFontFamily');
 
+
+        // --- State Management ---
         let alertTimeout;
         let currentVideoBlobUrl = null; // Track the current video's blob URL for revocation
+
 
         // --- Theme Toggle Logic ---
         
@@ -275,6 +408,142 @@
             setTheme('dark');
         }
 
+        // --- Subtitle Styling Logic ---
+
+        const SUB_SETTINGS_KEY = 'subtitleSettings';
+
+        /**
+         * Loads saved subtitle settings from localStorage and applies them to inputs.
+         * If no settings are found, it initializes and applies the defaults.
+         */
+        function loadSubtitleSettings() {
+            const savedSettings = localStorage.getItem(SUB_SETTINGS_KEY);
+            const defaultSettings = {
+                fontColor: '#ffffff',
+                backgroundColor: '#000000',
+                backgroundType: 'solid',
+                fontSize: '24px', // New default
+                fontFamily: "'Inter', sans-serif" 
+            };
+
+            const settings = savedSettings ? JSON.parse(savedSettings) : defaultSettings;
+
+            // Apply settings to controls
+            subFontColorInput.value = settings.fontColor;
+            subBackgroundColorInput.value = settings.backgroundColor;
+            subBackgroundTypeInput.value = settings.backgroundType;
+            subFontSizeInput.value = settings.fontSize;
+            subFontFamilyInput.value = settings.fontFamily;
+            
+            // Check if Custom Color picker needs to be visible on load
+            if (settings.backgroundType === 'custom') {
+                subBackgroundColorContainer.classList.remove('hidden');
+            }
+
+            // Apply styles immediately
+            applySubtitleStyles();
+            
+            // Set initial demo text
+            demoText.textContent = "The quick brown fox jumps over the lazy dog";
+        }
+
+        /**
+         * Reads current input values, saves them to localStorage, and updates the ::cue CSS rule AND the live demo.
+         */
+        function applySubtitleStyles() {
+            const settings = {
+                fontColor: subFontColorInput.value,
+                backgroundColor: subBackgroundColorInput.value,
+                backgroundType: subBackgroundTypeInput.value,
+                fontSize: subFontSizeInput.value,
+                fontFamily: subFontFamilyInput.value
+            };
+            
+            // Save to localStorage for persistence
+            localStorage.setItem(SUB_SETTINGS_KEY, JSON.stringify(settings));
+
+            let cueBgColor = 'transparent'; // Default for invisible background
+            let demoBgColor = 'transparent'; // Default for transparent demo
+
+            if (settings.backgroundType === 'solid') {
+                // Default solid (slightly transparent black box for readability)
+                cueBgColor = 'rgba(0, 0, 0, 0.8)'; 
+                demoBgColor = 'rgba(0, 0, 0, 0.8)';
+            } else if (settings.backgroundType === 'custom') {
+                // Use custom color with some default opacity (E6 = ~90%)
+                cueBgColor = settings.backgroundColor + 'E6';
+                demoBgColor = settings.backgroundColor;
+            } 
+            // If backgroundType is 'transparent', cueBgColor remains 'transparent'.
+
+            // --- 1. Apply to actual ::cue element (via dynamic style tag) ---
+            const cssRule = `
+                video::cue {
+                    color: ${settings.fontColor} !important;
+                    background-color: ${cueBgColor} !important;
+                    font-size: ${settings.fontSize} !important;
+                    font-family: ${settings.fontFamily} !important;
+                    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6); 
+                }
+            `;
+            subtitleStyleSheet.textContent = cssRule;
+
+            // --- 2. Apply to LIVE DEMO overlay ---
+            demoText.style.color = settings.fontColor;
+            demoText.style.backgroundColor = demoBgColor;
+            demoText.style.fontSize = settings.fontSize;
+            demoText.style.fontFamily = settings.fontFamily;
+            demoText.style.border = 'none'; // REMOVED BORDER FOR TRANSPARENCY VISUALIZATION
+        }
+
+        // Attach event listeners to all subtitle styling controls
+        [subFontColorInput, subBackgroundTypeInput, subBackgroundColorInput, subFontSizeInput, subFontFamilyInput].forEach(input => {
+            input.addEventListener('change', applySubtitleStyles);
+        });
+        
+        // Listener for background type selection change
+        subBackgroundTypeInput.addEventListener('change', () => {
+            const type = subBackgroundTypeInput.value;
+            if (type === 'custom') {
+                subBackgroundColorContainer.classList.remove('hidden');
+            } else {
+                subBackgroundColorContainer.classList.add('hidden');
+            }
+            applySubtitleStyles();
+        });
+
+
+        // --- Collapsible Logic ---
+        
+        /**
+         * Toggles the visibility of the subtitle settings panel and updates the icon.
+         */
+        function toggleSubSettings() {
+            const isHidden = subSettingsPanel.classList.toggle('hidden');
+            
+            // Update the gear icon rotation (Subtle 180-degree flip)
+            subSettingsToggle.querySelector('.fas').style.transform = isHidden ? '' : 'rotate(180deg)';
+            
+            // Update ARIA attribute for screen readers
+            subSettingsToggle.setAttribute('aria-expanded', !isHidden);
+
+            // Adjust main card corner rounding
+            if (isHidden) {
+                mainCard.classList.add('rounded-xl');
+                mainCard.classList.remove('rounded-b-none');
+            } else {
+                mainCard.classList.add('rounded-b-none');
+                mainCard.classList.remove('rounded-xl');
+                // Ensure the new panel is rounded at the bottom when visible
+                subSettingsPanel.classList.remove('rounded-xl');
+                subSettingsPanel.classList.add('rounded-b-xl');
+            }
+        }
+
+        // Add event listener to the new gear icon toggle
+        subSettingsToggle.addEventListener('click', toggleSubSettings);
+
+
         // --- Utility Functions ---
 
         /**
@@ -294,7 +563,7 @@
             alertIcon.classList.remove('text-red-300', 'text-yellow-300', 'text-green-300');
 
             if (type === 'error') {
-                // Red for critical failure (user requested orange/red)
+                // Red for critical failure
                 alertBox.classList.add('bg-red-900', 'text-red-300', 'border', 'border-red-700');
                 // Error icon
                 alertIcon.innerHTML = `<path fill-rule="evenodd" d="M8.257 3.376a1.5 1.5 0 012.486 0l5.5 10A1.5 1.5 0 0115 15.75H5a1.5 1.5 0 01-1.243-2.374l5.5-10zM12 9a1 1 0 11-2 0 1 1 0 012 0zm-1 2a1 1 0 10-2 0v2a1 1 0 102 0v-2z" clip-rule="evenodd" />`;
@@ -329,6 +598,7 @@
                 }
                 track.remove();
             });
+            // Download state cleanup removed
         }
         
         /**
@@ -350,6 +620,12 @@
                 iframePlayer.style.display = 'block';
                 // Disable drag drop overlay in iframe mode as subs won't work
                 dragDropOverlay.classList.add('pointer-events-none');
+                
+                // Clear media download state for external embeds
+                if (currentVideoBlobUrl) {
+                    URL.revokeObjectURL(currentVideoBlobUrl);
+                }
+                currentVideoBlobUrl = null;
             }
         }
 
@@ -365,8 +641,9 @@
         /**
          * Updates the media source and switches between HTML5 Video and Iframe.
          * @param {string} src - The new media source URL.
+         * @param {string | null} fileName - The filename if loaded from disk.
          */
-        function loadMediaSource(src) {
+        function loadMediaSource(src, fileName = null) {
             src = src ? src.trim() : '';
 
             // Handle clearing source
@@ -420,8 +697,9 @@
                 // Revoke any previous local video URL
                 if (currentVideoBlobUrl) {
                     URL.revokeObjectURL(currentVideoBlobUrl);
-                    currentVideoBlobUrl = null;
                 }
+                currentVideoBlobUrl = null;
+                
                 // Mode 2: Iframe Embed (Does NOT support local Subtitles)
                 setPlayerMode('iframe');
                 iframePlayer.src = src;
@@ -474,6 +752,7 @@
                     const subtitleBlob = new Blob([textContent], { type: mimeType });
                     const subtitleUrl = URL.createObjectURL(subtitleBlob);
 
+                    // Clear previous subtitle state
                     clearTracks(); 
 
                     const track = document.createElement('track');
@@ -523,7 +802,8 @@
             const file = event.target.files[0];
             if (file) {
                 const fileUrl = URL.createObjectURL(file);
-                loadMediaSource(fileUrl); 
+                // Pass the filename for download tracking
+                loadMediaSource(fileUrl, file.name); 
                 videoUrlInput.value = '';
             }
         });
@@ -553,12 +833,14 @@
         });
 
         mainCard.addEventListener('dragenter', (e) => {
+            // Check if the event contains files and if we are in HTML5 player mode
             if (videoPlayer.style.display !== 'none' && e.dataTransfer.types.includes('Files')) {
                  dragDropOverlay.style.display = 'flex';
             }
         }, false);
         
         mainCard.addEventListener('dragleave', (e) => {
+            // Only hide if the mouse is leaving the main card completely
             if (!mainCard.contains(e.relatedTarget)) {
                 dragDropOverlay.style.display = 'none';
             }
@@ -579,7 +861,7 @@
 
             if (isVideo || isAudio) {
                 const fileUrl = URL.createObjectURL(file);
-                loadMediaSource(fileUrl);
+                loadMediaSource(fileUrl, file.name); // Pass filename
                 videoUrlInput.value = '';
             } else if (isSubtitle) {
                 processSubtitleFile(file);
@@ -590,6 +872,7 @@
         
         // Add keyboard shortcut for basic media control (Space to Play/Pause)
         document.addEventListener('keydown', (e) => {
+            // Check if the active element is NOT the URL input to prevent accidental playback toggles while typing
             if (e.code === 'Space' && document.activeElement !== videoUrlInput && videoPlayer.style.display !== 'none') {
                 e.preventDefault();
                 if (videoPlayer.paused) {
@@ -601,8 +884,8 @@
         });
         
         // --- Final Setup ---
-        // We call setTheme already in the theme logic block above, 
-        // so we just ensure the default player mode is set.
+        // Initialize subtitle settings and theme on page load
+        loadSubtitleSettings();
         setPlayerMode('video');
 
     </script>
