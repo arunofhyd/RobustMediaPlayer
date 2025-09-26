@@ -291,8 +291,8 @@
 
             <!-- Video Player Area - Container switches content based on URL type -->
             <div class="media-container rounded-xl shadow-2xl" role="region" aria-label="Media Player and Subtitle Preview Area">
-                <!-- LIVE SUBTITLE DEMO OVERLAY - Set as live region so changes are announced -->
-                <div id="subtitleDemo" class="absolute z-50 bottom-4 left-1/2 transform -translate-x-1/2 p-2 pointer-events-none transition-all duration-300 ease-in-out text-center"
+                <!-- LIVE SUBTITLE DEMO OVERLAY - HIDDEN BY DEFAULT (Only visible when settings panel is open) -->
+                <div id="subtitleDemo" class="absolute z-50 bottom-4 left-1/2 transform -translate-x-1/2 p-2 pointer-events-none transition-all duration-300 ease-in-out text-center hidden"
                      aria-live="polite" aria-atomic="true">
                     <span id="demoText" style="white-space: nowrap; padding: 4px 8px; border-radius: 4px; display: inline-block;">The quick brown fox jumps over the lazy dog</span>
                 </div>
@@ -520,6 +520,9 @@
          */
         function toggleSubSettings() {
             const isHidden = subSettingsPanel.classList.toggle('hidden');
+            
+            // Toggle visibility of the demo box along with the panel
+            subtitleDemo.classList.toggle('hidden', isHidden);
             
             // Update the gear icon rotation (Subtle 180-degree flip)
             subSettingsToggle.querySelector('.fas').style.transform = isHidden ? '' : 'rotate(180deg)';
