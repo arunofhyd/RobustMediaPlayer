@@ -639,6 +639,9 @@
                     font-size: ${settings.fontSize} !important;
                     font-family: ${settings.fontFamily} !important;
                     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8); 
+                    /* FIX: Add padding and border-radius to the actual cue element */
+                    padding: 6px 12px !important;
+                    border-radius: 6px !important;
                 }
             `;
             subtitleStyleSheet.textContent = cssRule;
@@ -653,7 +656,7 @@
             demoText.style.fontSize = demoFontSize + 'vw'; /* Use VW for proportional sizing */
             demoText.style.fontFamily = settings.fontFamily;
             demoText.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.8)';
-            demoText.style.display = 'inline-block'; // FIX 1: Ensures the background color is visible
+            demoText.style.display = 'inline-block'; 
             
             // 3. Apply the time offset if a track is active
             applySubtitleOffset();
