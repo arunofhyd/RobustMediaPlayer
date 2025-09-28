@@ -339,7 +339,7 @@
                 <div id="subSettingsContent" class="p-3 sm:p-4">
                     <h3 id="sub-settings-heading" class="text-base sm:text-lg font-semibold text-link mb-3">Subtitle Appearance Settings</h3>
                     
-                    <!-- Updated grid to better accommodate 5 smaller controls -->
+                    <!-- Only Font/Size/Color/Offset controls remain -->
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
                         
                         <div class="setting-control">
@@ -371,23 +371,7 @@
                                      aria-label="Subtitle Font Size Slider, minimum 2 pixels, maximum 100 pixels">
                         </div>
 
-                        <!-- Subtitle Background Color Control -->
-                        <div class="setting-control">
-                            <label for="subBgColor" class="text-secondary">BG Color</label>
-                            <input type="color" id="subBgColor" class="w-full border rounded input-style cursor-pointer" value="#000000"
-                                     aria-label="Subtitle Background Color Picker">
-                        </div>
-                        
-                        <!-- Subtitle Background Opacity Control (Default changed to 50%) -->
-                        <div class="setting-control">
-                            <label for="subBgOpacity" class="text-secondary">BG Opacity (<span id="currentBgOpacity">50%</span>)</label>
-                            <input type="range" id="subBgOpacity" min="0" max="100" value="50" step="5"
-                                    class="w-full cursor-pointer"
-                                    aria-label="Subtitle Background Opacity Slider">
-                        </div>
-                        
-                        <!-- Placeholder to ensure layout stability -->
-                        <div class="hidden sm:block"></div> 
+                        <!-- BG Color/Opacity CONTROLS REMOVED -->
                         
                     </div>
 
@@ -407,6 +391,7 @@
             <div class="media-container rounded-xl shadow-2xl" role="region" aria-label="Media Player and Subtitle Preview Area">
                 <div id="subtitleDemo" class="absolute z-50 bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 p-2 pointer-events-none transition-all duration-300 ease-in-out text-center hidden max-w-full"
                               aria-live="polite" aria-atomic="true">
+                    <!-- Demo styling is simplified to just show text with shadow -->
                     <span id="demoText" style="white-space: nowrap; padding: 6px 12px; border-radius: 6px; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);">The quick brown fox jumps over the lazy dog</span>
                 </div>
 
@@ -471,13 +456,12 @@
         const subFontSizeInput = document.getElementById('subFontSize');
         const subFontFamilyInput = document.getElementById('subFontFamily');
         const subOffsetInput = document.getElementById('subOffset');
-        const subBgColorInput = document.getElementById('subBgColor'); 
-        const subBgOpacityInput = document.getElementById('subBgOpacity'); 
+        // REMOVED: subBgColorInput and subBgOpacityInput
         
         // New element to display current size and offset
         const currentFontSizeSpan = document.getElementById('currentFontSize');
         const currentSubOffsetSpan = document.getElementById('currentSubOffset');
-        const currentBgOpacitySpan = document.getElementById('currentBgOpacity'); 
+        // REMOVED: currentBgOpacitySpan
 
 
         // --- State Management ---
@@ -489,13 +473,10 @@
         let activeTrack = null; // Reference to the currently active TextTrack
 
         /**
-         * Helper function to convert hex color to RGBA format.
+         * Helper function to convert hex color to RGBA format. (NOW UNUSED)
          */
         function hexToRgba(hex, alpha) {
-            // Remove the # if it exists
             const shortHex = hex.startsWith('#') ? hex.slice(1) : hex;
-
-            // Handle 3-digit hex by duplicating each character (e.g., f0a -> ff00aa)
             const standardHex = shortHex.length === 3
                 ? shortHex.split('').map(char => char + char).join('')
                 : shortHex;
@@ -503,8 +484,6 @@
             const r = parseInt(standardHex.slice(0, 2), 16);
             const g = parseInt(standardHex.slice(2, 4), 16);
             const b = parseInt(standardHex.slice(4, 6), 16);
-
-            // Ensure alpha is a number and clamped between 0 and 1
             const finalAlpha = Math.max(0, Math.min(1, parseFloat(alpha)));
             
             return `rgba(${r}, ${g}, ${b}, ${finalAlpha})`;
@@ -565,11 +544,18 @@
                 fontSize: '24px', 
                 fontFamily: "'Inter', sans-serif",
                 subOffset: 0.0,
-                bgColor: '#000000', 
-                bgOpacity: 50 // DEFAULT CHANGED TO 50
+                // REMOVED default values for bgColor/bgOpacity
             };
 
             const settings = savedSettings ? JSON.parse(savedSettings) : defaultSettings;
+            
+            // Clean up localStorage to remove old, problematic settings
+            if (savedSettings && settings.bgColor) {
+                delete settings.bgColor;
+                delete settings.bgOpacity;
+                localStorage.setItem(SUB_SETTINGS_KEY, JSON.stringify(settings));
+            }
+
 
             // Apply settings to controls
             subFontColorInput.value = settings.fontColor;
@@ -580,9 +566,6 @@
             
             subOffsetInput.value = parseFloat(settings.subOffset) || 0.0;
             
-            subBgColorInput.value = settings.bgColor; 
-            subBgOpacityInput.value = parseInt(settings.bgOpacity) || 50; // FALLBACK CHANGED TO 50
-
             subFontFamilyInput.value = settings.fontFamily;
             
             // Apply styles and offset immediately
@@ -601,19 +584,17 @@
             const rawFontSize = subFontSizeInput.value; 
             const rawOffset = parseFloat(subOffsetInput.value).toFixed(1); 
             
-            // NEW BG reads and RGBA calculation
-            const rawBgColor = subBgColorInput.value;
-            const rawBgOpacity = subBgOpacityInput.value;
-            const alpha = rawBgOpacity / 100; // Convert 0-100 range to 0-1 alpha
-            const cueBgColor = hexToRgba(rawBgColor, alpha);
+            // REMOVED BG reads and RGBA calculation
+            
+            // Use transparent background for cue by default (since customization is buggy)
+            const cueBgColor = 'transparent'; 
 
             const settings = {
                 fontColor: subFontColorInput.value,
                 fontSize: rawFontSize + 'px', 
                 fontFamily: subFontFamilyInput.value,
                 subOffset: rawOffset,
-                bgColor: rawBgColor, // Save BG Color
-                bgOpacity: rawBgOpacity // Save BG Opacity (as 0-100)
+                // REMOVED bgColor/bgOpacity from settings object
             };
             
             // Update the visual display next to the labels
@@ -623,9 +604,7 @@
             if(currentSubOffsetSpan) {
                 currentSubOffsetSpan.textContent = rawOffset;
             }
-            if(currentBgOpacitySpan) {
-                currentBgOpacitySpan.textContent = rawBgOpacity + '%'; // NEW
-            }
+            // REMOVED update for currentBgOpacitySpan
 
             // Save to localStorage for persistence
             localStorage.setItem(SUB_SETTINGS_KEY, JSON.stringify(settings));
@@ -635,13 +614,14 @@
             const cssRule = `
                 video::cue {
                     color: ${settings.fontColor} !important;
-                    background-color: ${cueBgColor} !important; /* USE CALCULATED RGBA */
+                    /* Force background to transparent to ensure compatibility and remove potential dark boxes */
+                    background-color: transparent !important; 
                     font-size: ${settings.fontSize} !important;
                     font-family: ${settings.fontFamily} !important;
                     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8); 
-                    /* FIX: Add padding and border-radius to the actual cue element */
-                    padding: 6px 12px !important;
-                    border-radius: 6px !important;
+                    /* Set padding/border-radius to zero to disable box styling */
+                    padding: 0 !important;
+                    border-radius: 0 !important;
                 }
             `;
             subtitleStyleSheet.textContent = cssRule;
@@ -652,11 +632,13 @@
             const demoFontSize = Math.max(0.5, Math.min(6.0, proportionalSize)); 
             
             demoText.style.color = settings.fontColor;
-            demoText.style.backgroundColor = cueBgColor; // Use calculated RGBA
+            demoText.style.backgroundColor = 'transparent'; // Force transparent for demo too
             demoText.style.fontSize = demoFontSize + 'vw'; /* Use VW for proportional sizing */
             demoText.style.fontFamily = settings.fontFamily;
             demoText.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.8)';
             demoText.style.display = 'inline-block'; 
+            demoText.style.padding = '0'; // Remove box padding from demo
+            demoText.style.borderRadius = '0'; // Remove box rounding from demo
             
             // 3. Apply the time offset if a track is active
             applySubtitleOffset();
@@ -720,13 +702,14 @@
 
 
         // Attach event listeners to all controls for real-time feedback
-        [subFontColorInput, subFontFamilyInput, subFontSizeInput, subOffsetInput, subBgColorInput, subBgOpacityInput].forEach(input => {
+        // REMOVED: subBgColorInput, subBgOpacityInput from the listeners array
+        [subFontColorInput, subFontFamilyInput, subFontSizeInput, subOffsetInput].forEach(input => {
             // Use 'input' for sliders for smooth drag feedback, 'change' for selects/colors
             const eventType = input.type === 'range' ? 'input' : 'change';
             input.addEventListener(eventType, applySubtitleStyles);
         });
         
-        // --- Collapsible Logic ---
+        // --- Collapsible Logic (unchanged) ---
         
         /**
          * Toggles the visibility of the subtitle settings panel and updates the icon.
