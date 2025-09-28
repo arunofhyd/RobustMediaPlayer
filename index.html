@@ -291,8 +291,13 @@
                         <input type="text" id="videoUrl" placeholder="Enter link, e.g., https://streamtape.com/e/ or direct mp4/mp3 link"
                                class="flex-grow p-2.5 sm:p-3 border rounded-l-lg input-style focus:ring-blue-500 focus:border-blue-500 outline-none"
                                aria-label="Media or Embed URL Input">
-                        <button id="loadUrlBtn" class="btn btn-primary px-4 py-2.5 sm:py-3 text-white rounded-r-lg flex-shrink-0"
-                                     aria-label="Load Media or Embed Link">Load Link</button>
+                        <button id="loadUrlBtn" 
+                                class="btn btn-primary px-3 sm:px-4 py-2.5 sm:py-3 text-white rounded-r-lg flex-shrink-0 flex items-center justify-center"
+                                aria-label="Load Media or Embed Link">
+                            <span class="hidden sm:inline">Load Link</span>
+                            <!-- Icon for mobile -->
+                            <i class="fa-solid fa-arrow-right sm:hidden text-lg"></i>
+                        </button>
                     </div>
                 </div>
 
