@@ -236,11 +236,11 @@
             flex-direction: column;
             gap: 4px;
         }
-        #subFontColor, #subFontFamily, #subFontSize, #subOffset { /* Added subOffset for consistency */
+        #subFontColor, #subFontFamily, #subFontSize, #subOffset, #subBgColor, #subBgOpacity { 
             height: 38px;
             padding: 8px 4px;
         }
-        #subFontColor {
+        #subFontColor, #subBgColor {
             padding: 2px;
             height: 38px;
         }
@@ -339,7 +339,8 @@
                 <div id="subSettingsContent" class="p-3 sm:p-4">
                     <h3 id="sub-settings-heading" class="text-base sm:text-lg font-semibold text-link mb-3">Subtitle Appearance Settings</h3>
                     
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
+                    <!-- Updated grid to better accommodate 5 smaller controls -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
                         
                         <div class="setting-control">
                             <label for="subFontColor" class="text-secondary">Font Color</label>
@@ -370,16 +371,35 @@
                                      aria-label="Subtitle Font Size Slider, minimum 2 pixels, maximum 100 pixels">
                         </div>
 
-                        <!-- NEW: Subtitle Offset Control -->
-                        <div class="setting-control sm:col-span-3">
-                            <label for="subOffset" class="text-secondary">Subtitle Offset (Seconds: <span id="currentSubOffset">0.0</span>s)</label>
-                            <!-- Range from -10 to +10 seconds, step 0.1 -->
-                            <input type="range" id="subOffset" min="-10" max="10" value="0.0" step="0.1"
-                                    class="w-full cursor-pointer"
-                                    aria-label="Subtitle Timing Offset Slider, from -10 to +10 seconds">
+                        <!-- Subtitle Background Color Control -->
+                        <div class="setting-control">
+                            <label for="subBgColor" class="text-secondary">BG Color</label>
+                            <input type="color" id="subBgColor" class="w-full border rounded input-style cursor-pointer" value="#000000"
+                                     aria-label="Subtitle Background Color Picker">
                         </div>
-
+                        
+                        <!-- Subtitle Background Opacity Control (Default changed to 50%) -->
+                        <div class="setting-control">
+                            <label for="subBgOpacity" class="text-secondary">BG Opacity (<span id="currentBgOpacity">50%</span>)</label>
+                            <input type="range" id="subBgOpacity" min="0" max="100" value="50" step="5"
+                                    class="w-full cursor-pointer"
+                                    aria-label="Subtitle Background Opacity Slider">
+                        </div>
+                        
+                        <!-- Placeholder to ensure layout stability -->
+                        <div class="hidden sm:block"></div> 
+                        
                     </div>
+
+                    <!-- Existing Subtitle Offset Control - separated visually -->
+                    <div class="setting-control mt-4 border-t border-card-border pt-4">
+                        <label for="subOffset" class="text-secondary">Subtitle Offset (Seconds: <span id="currentSubOffset">0.0</span>s)</label>
+                        <!-- Range from -10 to +10 seconds, step 0.1 -->
+                        <input type="range" id="subOffset" min="-10" max="10" value="0.0" step="0.1"
+                                class="w-full cursor-pointer"
+                                aria-label="Subtitle Timing Offset Slider, from -10 to +10 seconds">
+                    </div>
+
                 </div>
             </div>
 
@@ -387,7 +407,7 @@
             <div class="media-container rounded-xl shadow-2xl" role="region" aria-label="Media Player and Subtitle Preview Area">
                 <div id="subtitleDemo" class="absolute z-50 bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 p-2 pointer-events-none transition-all duration-300 ease-in-out text-center hidden max-w-full"
                               aria-live="polite" aria-atomic="true">
-                    <span id="demoText" style="white-space: nowrap; padding: 6px 12px; border-radius: 6px; display: inline-block; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);">The quick brown fox jumps over the lazy dog</span>
+                    <span id="demoText" style="white-space: nowrap; padding: 6px 12px; border-radius: 6px; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);">The quick brown fox jumps over the lazy dog</span>
                 </div>
 
                 <div id="dragDropOverlay" class="absolute inset-0 z-10 hidden flex-col items-center justify-center 
@@ -450,10 +470,14 @@
         const subFontColorInput = document.getElementById('subFontColor');
         const subFontSizeInput = document.getElementById('subFontSize');
         const subFontFamilyInput = document.getElementById('subFontFamily');
-        const subOffsetInput = document.getElementById('subOffset'); // NEW OFFSET INPUT
+        const subOffsetInput = document.getElementById('subOffset');
+        const subBgColorInput = document.getElementById('subBgColor'); 
+        const subBgOpacityInput = document.getElementById('subBgOpacity'); 
+        
         // New element to display current size and offset
         const currentFontSizeSpan = document.getElementById('currentFontSize');
-        const currentSubOffsetSpan = document.getElementById('currentSubOffset'); // NEW OFFSET SPAN
+        const currentSubOffsetSpan = document.getElementById('currentSubOffset');
+        const currentBgOpacitySpan = document.getElementById('currentBgOpacity'); 
 
 
         // --- State Management ---
@@ -461,7 +485,6 @@
         let currentVideoBlobUrl = null; // Track the current video's blob URL for revocation
 
         // Global variable to store the original cues when a subtitle file is loaded
-        // This is necessary to reset the timing when the user changes the offset slider.
         let originalCues = [];
         let activeTrack = null; // Reference to the currently active TextTrack
 
@@ -487,7 +510,7 @@
             return `rgba(${r}, ${g}, ${b}, ${finalAlpha})`;
         }
 
-        // --- Theme Toggle Logic ---
+        // --- Theme Toggle Logic (unchanged) ---
         
         /**
          * Sets the current theme mode (light or dark).
@@ -541,7 +564,9 @@
                 fontColor: '#ffffff',
                 fontSize: '24px', 
                 fontFamily: "'Inter', sans-serif",
-                subOffset: 0.0 // NEW default offset
+                subOffset: 0.0,
+                bgColor: '#000000', 
+                bgOpacity: 50 // DEFAULT CHANGED TO 50
             };
 
             const settings = savedSettings ? JSON.parse(savedSettings) : defaultSettings;
@@ -553,7 +578,10 @@
             const sizeInPixels = parseInt(settings.fontSize.replace('px', '')) || 24;
             subFontSizeInput.value = Math.max(2, Math.min(100, sizeInPixels)); 
             
-            subOffsetInput.value = parseFloat(settings.subOffset) || 0.0; // Set offset value
+            subOffsetInput.value = parseFloat(settings.subOffset) || 0.0;
+            
+            subBgColorInput.value = settings.bgColor; 
+            subBgOpacityInput.value = parseInt(settings.bgOpacity) || 50; // FALLBACK CHANGED TO 50
 
             subFontFamilyInput.value = settings.fontFamily;
             
@@ -571,13 +599,21 @@
         function applySubtitleStyles() {
             // Read raw value (number string from slider)
             const rawFontSize = subFontSizeInput.value; 
-            const rawOffset = parseFloat(subOffsetInput.value).toFixed(1); // Get and format offset
+            const rawOffset = parseFloat(subOffsetInput.value).toFixed(1); 
+            
+            // NEW BG reads and RGBA calculation
+            const rawBgColor = subBgColorInput.value;
+            const rawBgOpacity = subBgOpacityInput.value;
+            const alpha = rawBgOpacity / 100; // Convert 0-100 range to 0-1 alpha
+            const cueBgColor = hexToRgba(rawBgColor, alpha);
 
             const settings = {
                 fontColor: subFontColorInput.value,
                 fontSize: rawFontSize + 'px', 
                 fontFamily: subFontFamilyInput.value,
-                subOffset: rawOffset // Save offset
+                subOffset: rawOffset,
+                bgColor: rawBgColor, // Save BG Color
+                bgOpacity: rawBgOpacity // Save BG Opacity (as 0-100)
             };
             
             // Update the visual display next to the labels
@@ -587,23 +623,19 @@
             if(currentSubOffsetSpan) {
                 currentSubOffsetSpan.textContent = rawOffset;
             }
+            if(currentBgOpacitySpan) {
+                currentBgOpacitySpan.textContent = rawBgOpacity + '%'; // NEW
+            }
 
             // Save to localStorage for persistence
             localStorage.setItem(SUB_SETTINGS_KEY, JSON.stringify(settings));
 
-            // Background color is permanently set to transparent
-            const cueBgColor = 'transparent'; 
-            const demoBgColor = 'transparent'; 
-            
-            // Calculate proportional demo size
-            const proportionalSize = (parseInt(rawFontSize) / 100) * 5; 
-            const demoFontSize = Math.max(0.5, Math.min(6.0, proportionalSize)); 
             
             // --- 1. Apply to actual ::cue element (via dynamic style tag) ---
             const cssRule = `
                 video::cue {
                     color: ${settings.fontColor} !important;
-                    background-color: ${cueBgColor} !important;
+                    background-color: ${cueBgColor} !important; /* USE CALCULATED RGBA */
                     font-size: ${settings.fontSize} !important;
                     font-family: ${settings.fontFamily} !important;
                     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8); 
@@ -612,8 +644,12 @@
             subtitleStyleSheet.textContent = cssRule;
 
             // --- 2. Apply to LIVE DEMO overlay (uses vw units for proportionality) ---
+            // Calculate proportional demo size
+            const proportionalSize = (parseInt(rawFontSize) / 100) * 5; 
+            const demoFontSize = Math.max(0.5, Math.min(6.0, proportionalSize)); 
+            
             demoText.style.color = settings.fontColor;
-            demoText.style.backgroundColor = demoBgColor;
+            demoText.style.backgroundColor = cueBgColor; // Use calculated RGBA
             demoText.style.fontSize = demoFontSize + 'vw'; /* Use VW for proportional sizing */
             demoText.style.fontFamily = settings.fontFamily;
             demoText.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.8)';
@@ -680,13 +716,13 @@
 
 
         // Attach event listeners to all controls for real-time feedback
-        [subFontColorInput, subFontFamilyInput, subFontSizeInput, subOffsetInput].forEach(input => {
+        [subFontColorInput, subFontFamilyInput, subFontSizeInput, subOffsetInput, subBgColorInput, subBgOpacityInput].forEach(input => {
             // Use 'input' for sliders for smooth drag feedback, 'change' for selects/colors
             const eventType = input.type === 'range' ? 'input' : 'change';
             input.addEventListener(eventType, applySubtitleStyles);
         });
         
-        // --- Collapsible Logic ---
+        // --- Collapsible Logic (unchanged) ---
         
         /**
          * Toggles the visibility of the subtitle settings panel and updates the icon.
@@ -725,7 +761,7 @@
         subSettingsToggle.addEventListener('click', toggleSubSettings);
 
 
-        // --- Utility Functions ---
+        // --- Utility Functions (unchanged) ---
 
         /**
          * Displays a temporary, visually distinct alert message for errors/warnings/successes.
@@ -985,7 +1021,7 @@
             reader.readAsText(file);
         }
 
-        // --- Event Listeners and Initialization ---
+        // --- Event Listeners and Initialization (unchanged) ---
         
         // Listener for the "Load URL" button.
         loadUrlBtn.addEventListener('click', () => {
@@ -1020,7 +1056,7 @@
             showTemporaryAlert('Media failed to load. Check URL or file type.', 'error');
         });
 
-        // --- Drag and Drop Logic ---
+        // --- Drag and Drop Logic (unchanged) ---
 
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             mainCard.addEventListener(eventName, (e) => {
@@ -1080,7 +1116,7 @@
             }
         });
         
-        // --- Final Setup ---
+        // --- Final Setup (unchanged) ---
         // Initialize subtitle settings and theme on page load
         loadSubtitleSettings();
         setPlayerMode('video');
