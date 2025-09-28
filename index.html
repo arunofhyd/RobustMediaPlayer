@@ -236,7 +236,7 @@
             flex-direction: column;
             gap: 4px;
         }
-        #subFontColor, #subFontFamily, #subFontSize {
+        #subFontColor, #subFontFamily, #subFontSize, #subOffset { /* Added subOffset for consistency */
             height: 38px;
             padding: 8px 4px;
         }
@@ -369,6 +369,16 @@
                                      class="w-full cursor-pointer"
                                      aria-label="Subtitle Font Size Slider, minimum 2 pixels, maximum 100 pixels">
                         </div>
+
+                        <!-- NEW: Subtitle Offset Control -->
+                        <div class="setting-control sm:col-span-3">
+                            <label for="subOffset" class="text-secondary">Subtitle Offset (Seconds: <span id="currentSubOffset">0.0</span>s)</label>
+                            <!-- Range from -10 to +10 seconds, step 0.1 -->
+                            <input type="range" id="subOffset" min="-10" max="10" value="0.0" step="0.1"
+                                    class="w-full cursor-pointer"
+                                    aria-label="Subtitle Timing Offset Slider, from -10 to +10 seconds">
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -440,13 +450,20 @@
         const subFontColorInput = document.getElementById('subFontColor');
         const subFontSizeInput = document.getElementById('subFontSize');
         const subFontFamilyInput = document.getElementById('subFontFamily');
-        // New element to display current size
+        const subOffsetInput = document.getElementById('subOffset'); // NEW OFFSET INPUT
+        // New element to display current size and offset
         const currentFontSizeSpan = document.getElementById('currentFontSize');
+        const currentSubOffsetSpan = document.getElementById('currentSubOffset'); // NEW OFFSET SPAN
 
 
         // --- State Management ---
         let alertTimeout;
         let currentVideoBlobUrl = null; // Track the current video's blob URL for revocation
+
+        // Global variable to store the original cues when a subtitle file is loaded
+        // This is necessary to reset the timing when the user changes the offset slider.
+        let originalCues = [];
+        let activeTrack = null; // Reference to the currently active TextTrack
 
         /**
          * Helper function to convert hex color to RGBA format.
@@ -511,7 +528,7 @@
             setTheme('dark');
         }
 
-        // --- Subtitle Styling Logic ---
+        // --- Subtitle Styling and Offset Logic ---
 
         const SUB_SETTINGS_KEY = 'subtitleSettings';
 
@@ -522,8 +539,9 @@
             const savedSettings = localStorage.getItem(SUB_SETTINGS_KEY);
             const defaultSettings = {
                 fontColor: '#ffffff',
-                fontSize: '24px', // Default size for storage
-                fontFamily: "'Inter', sans-serif" 
+                fontSize: '24px', 
+                fontFamily: "'Inter', sans-serif",
+                subOffset: 0.0 // NEW default offset
             };
 
             const settings = savedSettings ? JSON.parse(savedSettings) : defaultSettings;
@@ -531,37 +549,43 @@
             // Apply settings to controls
             subFontColorInput.value = settings.fontColor;
             
-            // Set slider value: read the number part (e.g., '24px' -> 24)
+            // Set slider values, clamping as needed
             const sizeInPixels = parseInt(settings.fontSize.replace('px', '')) || 24;
-            // Clamp the value to the slider's min/max range for safety (2px to 100px)
             subFontSizeInput.value = Math.max(2, Math.min(100, sizeInPixels)); 
+            
+            subOffsetInput.value = parseFloat(settings.subOffset) || 0.0; // Set offset value
 
             subFontFamilyInput.value = settings.fontFamily;
             
-            // Apply styles immediately
+            // Apply styles and offset immediately
             applySubtitleStyles();
+            applySubtitleOffset();
             
             // Set initial demo text
             demoText.textContent = "The quick brown fox jumps over the lazy dog";
         }
 
         /**
-         * Reads current input values, saves them to localStorage, and updates the ::cue CSS rule AND the live demo.
+         * Reads current input values, saves them, and updates the ::cue CSS rule AND the live demo.
          */
         function applySubtitleStyles() {
             // Read raw value (number string from slider)
             const rawFontSize = subFontSizeInput.value; 
-            
+            const rawOffset = parseFloat(subOffsetInput.value).toFixed(1); // Get and format offset
+
             const settings = {
                 fontColor: subFontColorInput.value,
-                // Always append 'px' for CSS use and consistency in storage
                 fontSize: rawFontSize + 'px', 
-                fontFamily: subFontFamilyInput.value
+                fontFamily: subFontFamilyInput.value,
+                subOffset: rawOffset // Save offset
             };
             
-            // Update the visual display next to the label
+            // Update the visual display next to the labels
             if(currentFontSizeSpan) {
                 currentFontSizeSpan.textContent = settings.fontSize;
+            }
+            if(currentSubOffsetSpan) {
+                currentSubOffsetSpan.textContent = rawOffset;
             }
 
             // Save to localStorage for persistence
@@ -571,9 +595,7 @@
             const cueBgColor = 'transparent'; 
             const demoBgColor = 'transparent'; 
             
-            // FIX: Calculate proportional demo size based on viewport width (vw) for full-screen proportionality.
-            // Using a lower minimum clamp (0.5vw) allows the 2px-20px range to be visually distinct.
-            // Formula: (rawFontSize / 100) * 5
+            // Calculate proportional demo size
             const proportionalSize = (parseInt(rawFontSize) / 100) * 5; 
             const demoFontSize = Math.max(0.5, Math.min(6.0, proportionalSize)); 
             
@@ -595,17 +617,75 @@
             demoText.style.fontSize = demoFontSize + 'vw'; /* Use VW for proportional sizing */
             demoText.style.fontFamily = settings.fontFamily;
             demoText.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.8)';
+            
+            // 3. Apply the time offset if a track is active
+            applySubtitleOffset();
         }
 
-        // Attach event listeners to non-slider controls on change
-        [subFontColorInput, subFontFamilyInput].forEach(input => {
-            input.addEventListener('change', applySubtitleStyles);
+        /**
+         * Applies the time offset to the currently active subtitle track cues.
+         */
+        function applySubtitleOffset() {
+            const offset = parseFloat(subOffsetInput.value);
+            currentSubOffsetSpan.textContent = offset.toFixed(1);
+
+            // Find the active track
+            const tracks = videoPlayer.textTracks;
+            let currentTrack = null;
+
+            for (let i = 0; i < tracks.length; i++) {
+                if (tracks[i].mode === 'showing' || tracks[i].default) {
+                    currentTrack = tracks[i];
+                    break;
+                }
+            }
+
+            if (!currentTrack) return;
+
+            // If the active track changed, or if cues haven't been stored, store them (only runs once per file load)
+            if (currentTrack !== activeTrack || originalCues.length === 0) {
+                 // Wait for the track cues to be loaded (can take a moment for large files)
+                if (currentTrack.cues && currentTrack.cues.length > 0) {
+                    originalCues = Array.from(currentTrack.cues).map(cue => ({
+                        start: cue.startTime,
+                        end: cue.endTime,
+                        text: cue.text
+                    }));
+                    activeTrack = currentTrack;
+                } else {
+                    // Try again when cues are ready (e.g., if loaded over network)
+                    currentTrack.addEventListener('load', applySubtitleOffset, { once: true });
+                    return;
+                }
+            }
+
+            // Clear existing cues
+            while(currentTrack.cues.length > 0) {
+                currentTrack.removeCue(currentTrack.cues[0]);
+            }
+            
+            // Re-add cues with the new offset
+            originalCues.forEach(cueData => {
+                const newStartTime = Math.max(0, cueData.start + offset);
+                const newEndTime = Math.max(newStartTime, cueData.end + offset);
+
+                const newCue = new VTTCue(newStartTime, newEndTime, cueData.text);
+                // Inherit alignment properties if available (though many are lost converting to VTT)
+                currentTrack.addCue(newCue);
+            });
+            
+            // This is crucial: the track needs to be showing for the cues to appear
+            currentTrack.mode = 'showing';
+        }
+
+
+        // Attach event listeners to all controls for real-time feedback
+        [subFontColorInput, subFontFamilyInput, subFontSizeInput, subOffsetInput].forEach(input => {
+            // Use 'input' for sliders for smooth drag feedback, 'change' for selects/colors
+            const eventType = input.type === 'range' ? 'input' : 'change';
+            input.addEventListener(eventType, applySubtitleStyles);
         });
         
-        // Use 'input' event for the slider for smooth real-time visual feedback while dragging
-        subFontSizeInput.addEventListener('input', applySubtitleStyles);
-
-
         // --- Collapsible Logic ---
         
         /**
@@ -616,7 +696,9 @@
             const gearIcon = subSettingsToggle.querySelector('i'); // Target the Font Awesome <i> tag
 
             // Toggle visibility of the demo box along with the panel
-            subtitleDemo.classList.toggle('hidden', isHidden);
+            // Only show the demo if the panel is open AND no media is loaded/playing
+            const isVideoActive = videoPlayer.style.display !== 'none' && videoPlayer.src;
+            subtitleDemo.classList.toggle('hidden', isHidden || isVideoActive);
             
             // Update the gear icon rotation (Subtle 180-degree flip)
             gearIcon.style.transform = isHidden ? '' : 'rotate(180deg)';
@@ -688,7 +770,7 @@
         }
 
         /**
-         * Clears existing subtitle tracks from the video element.
+         * Clears existing subtitle tracks from the video element and resets state.
          */
         function clearTracks() {
             const tracks = videoPlayer.querySelectorAll('track');
@@ -698,6 +780,8 @@
                 }
                 track.remove();
             });
+            originalCues = [];
+            activeTrack = null;
         }
         
         /**
@@ -725,6 +809,12 @@
                     URL.revokeObjectURL(currentVideoBlobUrl);
                 }
                 currentVideoBlobUrl = null;
+            }
+            // Hide the subtitle demo when player mode changes or media is active
+            if (subtitleDemo.classList.contains('hidden')) {
+                // If it was already hidden (settings closed), keep it hidden
+            } else {
+                subtitleDemo.classList.add('hidden');
             }
         }
 
@@ -766,7 +856,7 @@
             const isExternalLink = src.startsWith('http://') || src.startsWith('https://');
 
             if (isDirectMediaFile) {
-                // Mode 1: HTML5 Video/Audio (Supports Subtitles)
+                // Mode 1: HTML5 Video/Audio (Supports Subtitles - local VTT/SRT files via Blob)
                 setPlayerMode('video');
                 
                 // --- Memory Management: Revoke old Blob URL ---
@@ -815,9 +905,10 @@
 
         /**
          * Processes a subtitle file (VTT or SRT) and attaches it to the video player.
+         * @param {File} file - The subtitle file object.
          */
         function processSubtitleFile(file) {
-             if (videoPlayer.style.display === 'none' || videoPlayer.src === '') {
+             if (videoPlayer.style.display === 'none' || !videoPlayer.src) {
                  showTemporaryAlert('Error: Load a media file in HTML5 Player Mode first.', 'error');
                  subtitleFileInput.value = null; 
                  return;
@@ -860,15 +951,23 @@
                     track.src = subtitleUrl;
                     track.default = true; // This is crucial for initial activation
 
+                    // Must append to the player *before* trying to read cues, to load the VTT
                     videoPlayer.appendChild(track);
-
-                    statusMessage.textContent = `Subtitle file "${file.name}" loaded and attached.`;
-                    showTemporaryAlert(`Subtitle file "${file.name}" loaded successfully. Activate it in the video controls.`, 'success');
                     
-                    track.onerror = () => {
+                    // Crucial step: wait for the track to load before attempting offset/cues read
+                    track.addEventListener('load', () => {
+                        statusMessage.textContent = `Subtitle file "${file.name}" loaded and attached.`;
+                        showTemporaryAlert(`Subtitle file "${file.name}" loaded successfully. Use the offset slider to sync.`, 'success');
+                        
+                        // Set the active track and apply the initial offset
+                        activeTrack = track.track;
+                        applySubtitleOffset(); 
+                    }, { once: true });
+                    
+                    track.track.addEventListener('error', () => {
                         statusMessage.textContent = `CRITICAL ERROR: Failed to load subtitle track (check file format validity).`;
                         showTemporaryAlert('CRITICAL ERROR: Subtitle file could not be parsed by the browser.', 'error');
-                    };
+                    });
 
                 } catch (error) {
                     console.error('Subtitle processing error:', error);
