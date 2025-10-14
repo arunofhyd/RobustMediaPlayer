@@ -1,7 +1,7 @@
 # Robust Media Player  
 
 <p align="center">
-  <img width="300" height="300" alt="logo" src="assets/logo.png" />
+  <img width="300" height="300" alt="logo" src="/assets/logo.png" />
 </p>
 
 A feature-rich, single-file **HTML media player** designed to play **local video/audio files** or stream **embedded content**, with **powerful, persistent subtitle customization**.  
