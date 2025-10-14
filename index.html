@@ -470,12 +470,9 @@
         @keyframes slideDown {
             from {
                 opacity: 0;
-                max-height: 0;
-                overflow: hidden;
             }
             to {
                 opacity: 1;
-                max-height: 500px;
             }
         }
 
@@ -630,7 +627,7 @@
                     <button class="btn btn-secondary w-full text-white py-3 sm:py-4 rounded-xl shadow-md flex flex-col justify-center items-center"
                             aria-hidden="true" tabindex="-1">
                         <div class="text-sm sm:text-base font-semibold">Load Local Media File</div>
-                        <span class="text-xs sm:text-sm font-normal text-indigo-200 opacity-90 mt-1.5">Video (.mp4, .webm, .mkv, .avi, .mov) & Audio (.mp3, .wav, .flac)</span>
+                        <span class="text-[10px] font-thin text-indigo-200 opacity-90 mt-1.5">Video (.mp4, .webm, .mkv, .avi, .mov) & Audio (.mp3, .wav, .flac)</span>
                     </button>
                     <input type="file" id="videoFile" accept="video/*,audio/*" class="absolute inset-0 block"
                             aria-label="Select local video or audio file to load">
@@ -642,7 +639,7 @@
                             <button class="btn btn-tertiary w-full text-white py-3 sm:py-4 rounded-l-xl shadow-md flex flex-col justify-center items-center h-full"
                                      aria-hidden="true" tabindex="-1">
                                 <div class="text-sm sm:text-base font-semibold">Load Local Subtitle</div>
-                                <span class="text-xs sm:text-sm font-normal text-teal-100 opacity-90 mt-1.5">Subtitles (.vtt, .srt)</span>
+                                <span class="text-[10px] font-thin text-teal-100 opacity-90 mt-1.5">Subtitles (.vtt, .srt)</span>
                             </button>
                             <input type="file" id="subtitleFile" accept=".vtt,.srt" class="absolute inset-0 block"
                                      aria-label="Select local subtitle file (VTT or SRT) to load">
