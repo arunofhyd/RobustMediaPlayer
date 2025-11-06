@@ -505,6 +505,24 @@
             animation: fadeIn 0.2s ease-in-out;
         }
 
+        #dragDropOverlay.is-active {
+            border-color: #3b82f6;
+            animation: fadeIn 0.2s, pulse-border 1.5s infinite;
+        }
+
+        #dragDropOverlay.is-active .icon-scale {
+            transform: scale(1.1);
+        }
+
+        @keyframes pulse-border {
+            0%, 100% {
+                border-color: #2563eb;
+            }
+            50% {
+                border-color: #60a5fa;
+            }
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -706,10 +724,18 @@
                 </div>
 
                 <div id="dragDropOverlay" class="absolute inset-0 z-10 hidden flex-col items-center justify-center
-                                                 bg-gray-900/90 border-4 border-dashed border-blue-500 rounded-2xl transition duration-150 ease-in-out pointer-events-none"
+                                                 bg-gray-900/90 border-4 border-dashed border-gray-600 rounded-2xl transition-all duration-300 ease-in-out pointer-events-none"
                                                  aria-hidden="true">
-                    <p class="text-2xl sm:text-4xl text-blue-300 font-bold mb-3">Drop File Here</p>
-                    <p class="text-base sm:text-xl text-gray-300 font-medium">(Video, Audio, .VTT, or .SRT)</p>
+                    <span class="icon-scale transition-transform duration-300 text-center">
+                        <p class="text-2xl sm:text-4xl text-blue-300 font-bold mb-3">Drop File Here</p>
+                        <p class="text-base sm:text-xl text-gray-300 font-medium">(Video, Audio, .VTT, or .SRT)</p>
+                    </span>
+                </div>
+
+                <div id="feedbackIndicator" class="absolute inset-0 flex items-center justify-center pointer-events-none z-20 opacity-0 transition-opacity duration-300" aria-live="polite" aria-atomic="true">
+                    <div class="bg-black/60 backdrop-blur-sm text-white rounded-full w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center shadow-lg">
+                        <i id="indicatorIcon" class="fas fa-play text-3xl sm:text-4xl"></i>
+                    </div>
                 </div>
 
                 <video id="videoPlayer" controls preload="auto" poster="https://placehold.co/800x450/1f2937/a0aec0?text=Ready+to+Load+Media"
@@ -752,6 +778,8 @@
         const mainCard = document.getElementById('mainCard'); // Main drag target
         const dragDropOverlay = document.getElementById('dragDropOverlay');
         const themeToggle = document.getElementById('themeToggle');
+        const feedbackIndicator = document.getElementById('feedbackIndicator');
+        const indicatorIcon = document.getElementById('indicatorIcon');
 
         // Updated to target the new Font Awesome <i> tags
         const sunIcon = document.getElementById('sunIcon');
@@ -780,6 +808,7 @@
 
         // --- State Management ---
         let alertTimeout;
+        let feedbackTimeout;
         let currentVideoBlobUrl = null; // Track the current video's blob URL for revocation
 
         // Global variable to store the original cues when a subtitle file is loaded
@@ -1057,7 +1086,7 @@
             // Reset classes
             alertBox.className = "hidden p-4 rounded-xl text-xs sm:text-sm mb-5 sm:mb-7 shadow-xl flex items-center";
             alertIcon.innerHTML = ''; // Clear icon content
-            alertBox.classList.remove('bg-red-900', 'text-red-300', 'border-red-700', 'bg-yellow-900', 'text-yellow-300', 'border-yellow-700', 'bg-green-900', 'text-green-300', 'border-green-700');
+            alertBox.classList.remove('bg-red-900', 'text-red-300', 'border-red-700', 'bg-yellow-900', 'text-yellow-300', 'border-yellow-700', 'bg-green-900', 'text-green-300', 'border-green-700', 'bg-blue-900', 'text-blue-300', 'border-blue-700');
 
             if (type === 'error') {
                 // Red for critical failure
@@ -1074,6 +1103,11 @@
                 alertBox.classList.add('bg-green-900', 'text-green-300', 'border', 'border-green-700');
                 // Checkmark icon
                 alertIcon.innerHTML = `<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.644-1.897-1.898a.75.75 0 10-1.06 1.06l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />`;
+            } else if (type === 'info') {
+                // Blue for informational messages
+                alertBox.classList.add('bg-blue-900', 'text-blue-300', 'border', 'border-blue-700');
+                // Info icon (reusing the warning icon as it's suitable)
+                alertIcon.innerHTML = `<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>`;
             }
 
             alertText.textContent = message;
@@ -1112,7 +1146,9 @@
                 dragDropOverlay.classList.remove('pointer-events-none');
             } else if (mode === 'iframe') {
                 videoPlayer.style.display = 'none';
-                videoPlayer.src = '';
+                videoPlayer.pause();
+                videoPlayer.removeAttribute('src');
+                videoPlayer.load();
                 videoPlayer.poster = 'https://placehold.co/800x450/1f2937/a0aec0?text=External+Embed+Loaded';
                 clearTracks();
                 iframePlayer.style.display = 'block';
@@ -1149,6 +1185,10 @@
          */
         function loadMediaSource(src, fileName = null) {
             src = src ? src.trim() : '';
+            // Automatically prepend https:// if the link is missing a protocol
+            if (src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('blob:')) {
+                src = 'https://' + src;
+            }
 
             // Handle clearing source
             if (!src) {
@@ -1206,8 +1246,8 @@
                 // Mode 2: Iframe Embed (Does NOT support local Subtitles)
                 setPlayerMode('iframe');
                 iframePlayer.src = src;
-                statusMessage.innerHTML = 'External embed loaded via Iframe. <span class="text-red-400 font-bold">Local subtitle loading is NOT supported.</span>';
-                showTemporaryAlert('Warning: External embed loaded. Subtitles are unavailable due to cross-domain security.', 'warning');
+                statusMessage.innerHTML = 'External embed loaded. <span class="text-yellow-400">Local subtitle loading is not supported in this mode.</span>';
+                showTemporaryAlert('Embed loaded in Iframe mode. Local subtitles are disabled.', 'info');
             } else {
                 setPlayerMode('video');
                 videoPlayer.src = '';
@@ -1347,7 +1387,8 @@
         mainCard.addEventListener('dragenter', (e) => {
             // Check if the event contains files and if we are in HTML5 player mode
             if (videoPlayer.style.display !== 'none' && e.dataTransfer.types.includes('Files')) {
-                 dragDropOverlay.style.display = 'flex';
+                dragDropOverlay.style.display = 'flex';
+                dragDropOverlay.classList.add('is-active');
             }
         }, false);
 
@@ -1355,11 +1396,13 @@
             // Only hide if the mouse is leaving the main card completely
             if (!mainCard.contains(e.relatedTarget)) {
                 dragDropOverlay.style.display = 'none';
+                dragDropOverlay.classList.remove('is-active');
             }
         }, false);
 
         mainCard.addEventListener('drop', (e) => {
             dragDropOverlay.style.display = 'none';
+            dragDropOverlay.classList.remove('is-active');
             const files = e.dataTransfer.files;
 
             if (files.length === 0) return;
@@ -1382,18 +1425,115 @@
             }
         }, false);
 
-        // Add keyboard shortcut for basic media control (Space to Play/Pause)
-        document.addEventListener('keydown', (e) => {
-            // Check if the active element is NOT the URL input to prevent accidental playback toggles while typing
-            if (e.code === 'Space' && document.activeElement !== videoUrlInput && videoPlayer.style.display !== 'none') {
-                e.preventDefault();
-                if (videoPlayer.paused) {
-                    videoPlayer.play();
-                } else {
-                    videoPlayer.pause();
-                }
+        /**
+         * Handles all keyboard shortcuts for the media player.
+         * @param {KeyboardEvent} e - The keyboard event.
+         */
+        /**
+         * Displays a visual feedback indicator over the video player.
+         * @param {string} iconClass - The Font Awesome class for the icon to display.
+         */
+        function showFeedback(iconClass) {
+            if (feedbackTimeout) {
+                clearTimeout(feedbackTimeout);
             }
-        });
+
+            // More robust handling for volume icons
+            if (iconClass.startsWith('fa-volume')) {
+                 if (videoPlayer.muted || videoPlayer.volume === 0) iconClass = 'fa-volume-mute';
+                 else if (videoPlayer.volume <= 0.5) iconClass = 'fa-volume-down';
+                 else iconClass = 'fa-volume-up';
+            }
+
+            indicatorIcon.className = `fas ${iconClass} text-3xl sm:text-4xl`;
+            feedbackIndicator.style.opacity = '1';
+
+            feedbackTimeout = setTimeout(() => {
+                feedbackIndicator.style.opacity = '0';
+            }, 800);
+        }
+
+        function handleKeydown(e) {
+            // Ignore shortcuts if user is typing in an input field
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.isContentEditable) {
+                return;
+            }
+
+            // Only apply shortcuts if the HTML5 video player is active
+            if (videoPlayer.style.display === 'none') {
+                return;
+            }
+
+            let handled = true;
+
+            switch (e.key) {
+                case ' ':
+                    // Prevent continuous toggling when space is held down
+                    if (e.repeat) return;
+                    if (videoPlayer.paused) {
+                        videoPlayer.play();
+                    } else {
+                        videoPlayer.pause();
+                    }
+                    break;
+                case 'ArrowLeft':
+                    // Seek backward
+                    videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 5);
+                    showFeedback('fa-backward');
+                    break;
+                case 'ArrowRight':
+                    // Seek forward
+                    videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 5);
+                    showFeedback('fa-forward');
+                    break;
+                case 'ArrowUp':
+                    // Volume up
+                    videoPlayer.volume = Math.min(1, videoPlayer.volume + 0.1);
+                    showFeedback('fa-volume-up');
+                    break;
+                case 'ArrowDown':
+                    // Volume down
+                    videoPlayer.volume = Math.max(0, videoPlayer.volume - 0.1);
+                    showFeedback('fa-volume-down');
+                    break;
+                case 'm':
+                case 'M':
+                    // Prevent repeat for mute toggle
+                    if (e.repeat) return;
+                    videoPlayer.muted = !videoPlayer.muted;
+                    showFeedback(videoPlayer.muted ? 'fa-volume-mute' : 'fa-volume-up');
+                    break;
+                case 'f':
+                case 'F':
+                     // Prevent repeat for fullscreen toggle
+                    if (e.repeat) return;
+                    const mediaContainer = videoPlayer.parentElement;
+                    if (!document.fullscreenElement) {
+                        // It's better to request fullscreen on the container to include custom controls
+                        if (mediaContainer.requestFullscreen) {
+                            mediaContainer.requestFullscreen();
+                        }
+                    } else {
+                        if (document.exitFullscreen) {
+                            document.exitFullscreen();
+                        }
+                    }
+                    break;
+                default:
+                    handled = false;
+                    break;
+            }
+
+            if (handled) {
+                e.preventDefault();
+            }
+        }
+
+        document.addEventListener('keydown', handleKeydown);
+
+        // --- Player Event Listeners for Feedback ---
+        videoPlayer.addEventListener('play', () => showFeedback('fa-play'));
+        videoPlayer.addEventListener('pause', () => showFeedback('fa-pause'));
 
         // --- Final Setup (unchanged) ---
         // Initialize subtitle settings and theme on page load
