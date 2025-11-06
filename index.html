@@ -732,6 +732,12 @@
                     </span>
                 </div>
 
+                <div id="feedbackIndicator" class="absolute inset-0 flex items-center justify-center pointer-events-none z-20 opacity-0 transition-opacity duration-300" aria-live="polite" aria-atomic="true">
+                    <div class="bg-black/60 backdrop-blur-sm text-white rounded-full w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center shadow-lg">
+                        <i id="indicatorIcon" class="fas fa-play text-3xl sm:text-4xl"></i>
+                    </div>
+                </div>
+
                 <video id="videoPlayer" controls preload="auto" poster="https://placehold.co/800x450/1f2937/a0aec0?text=Ready+to+Load+Media"
                                  aria-label="HTML5 Video Player for local media">
                     </video>
@@ -772,6 +778,8 @@
         const mainCard = document.getElementById('mainCard'); // Main drag target
         const dragDropOverlay = document.getElementById('dragDropOverlay');
         const themeToggle = document.getElementById('themeToggle');
+        const feedbackIndicator = document.getElementById('feedbackIndicator');
+        const indicatorIcon = document.getElementById('indicatorIcon');
 
         // Updated to target the new Font Awesome <i> tags
         const sunIcon = document.getElementById('sunIcon');
@@ -800,6 +808,7 @@
 
         // --- State Management ---
         let alertTimeout;
+        let feedbackTimeout;
         let currentVideoBlobUrl = null; // Track the current video's blob URL for revocation
 
         // Global variable to store the original cues when a subtitle file is loaded
@@ -1420,9 +1429,33 @@
          * Handles all keyboard shortcuts for the media player.
          * @param {KeyboardEvent} e - The keyboard event.
          */
+        /**
+         * Displays a visual feedback indicator over the video player.
+         * @param {string} iconClass - The Font Awesome class for the icon to display.
+         */
+        function showFeedback(iconClass) {
+            if (feedbackTimeout) {
+                clearTimeout(feedbackTimeout);
+            }
+
+            // More robust handling for volume icons
+            if (iconClass.startsWith('fa-volume')) {
+                 if (videoPlayer.muted || videoPlayer.volume === 0) iconClass = 'fa-volume-mute';
+                 else if (videoPlayer.volume <= 0.5) iconClass = 'fa-volume-down';
+                 else iconClass = 'fa-volume-up';
+            }
+
+            indicatorIcon.className = `fas ${iconClass} text-3xl sm:text-4xl`;
+            feedbackIndicator.style.opacity = '1';
+
+            feedbackTimeout = setTimeout(() => {
+                feedbackIndicator.style.opacity = '0';
+            }, 800);
+        }
+
         function handleKeydown(e) {
-            // Ignore shortcuts if the user is typing in the URL input
-            if (document.activeElement === videoUrlInput) {
+            // Ignore shortcuts if user is typing in an input field
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.isContentEditable) {
                 return;
             }
 
@@ -1431,11 +1464,12 @@
                 return;
             }
 
-            e.preventDefault();
+            let handled = true;
 
             switch (e.key) {
                 case ' ':
-                    // Play/Pause
+                    // Prevent continuous toggling when space is held down
+                    if (e.repeat) return;
                     if (videoPlayer.paused) {
                         videoPlayer.play();
                     } else {
@@ -1444,40 +1478,62 @@
                     break;
                 case 'ArrowLeft':
                     // Seek backward
-                    videoPlayer.currentTime -= 5;
+                    videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 5);
+                    showFeedback('fa-backward');
                     break;
                 case 'ArrowRight':
                     // Seek forward
-                    videoPlayer.currentTime += 5;
+                    videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 5);
+                    showFeedback('fa-forward');
                     break;
                 case 'ArrowUp':
                     // Volume up
                     videoPlayer.volume = Math.min(1, videoPlayer.volume + 0.1);
+                    showFeedback('fa-volume-up');
                     break;
                 case 'ArrowDown':
                     // Volume down
                     videoPlayer.volume = Math.max(0, videoPlayer.volume - 0.1);
+                    showFeedback('fa-volume-down');
                     break;
                 case 'm':
                 case 'M':
-                    // Mute toggle
+                    // Prevent repeat for mute toggle
+                    if (e.repeat) return;
                     videoPlayer.muted = !videoPlayer.muted;
+                    showFeedback(videoPlayer.muted ? 'fa-volume-mute' : 'fa-volume-up');
                     break;
                 case 'f':
                 case 'F':
-                     // Fullscreen toggle
+                     // Prevent repeat for fullscreen toggle
+                    if (e.repeat) return;
+                    const mediaContainer = videoPlayer.parentElement;
                     if (!document.fullscreenElement) {
-                        videoPlayer.requestFullscreen();
+                        // It's better to request fullscreen on the container to include custom controls
+                        if (mediaContainer.requestFullscreen) {
+                            mediaContainer.requestFullscreen();
+                        }
                     } else {
                         if (document.exitFullscreen) {
                             document.exitFullscreen();
                         }
                     }
                     break;
+                default:
+                    handled = false;
+                    break;
+            }
+
+            if (handled) {
+                e.preventDefault();
             }
         }
 
         document.addEventListener('keydown', handleKeydown);
+
+        // --- Player Event Listeners for Feedback ---
+        videoPlayer.addEventListener('play', () => showFeedback('fa-play'));
+        videoPlayer.addEventListener('pause', () => showFeedback('fa-pause'));
 
         // --- Final Setup (unchanged) ---
         // Initialize subtitle settings and theme on page load
