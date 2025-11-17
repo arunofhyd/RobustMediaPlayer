@@ -24,6 +24,7 @@
     <meta name="msapplication-TileColor" content="#3b82f6">
     <meta name="theme-color" id="theme-color-meta" content="#3b82f6">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
     <script type="application/ld+json">
     {
@@ -810,6 +811,7 @@
         let alertTimeout;
         let feedbackTimeout;
         let currentVideoBlobUrl = null; // Track the current video's blob URL for revocation
+        let hls; // Keep a single HLS instance
 
         // Global variable to store the original cues when a subtitle file is loaded
         let originalCues = [];
@@ -1190,6 +1192,12 @@
                 src = 'https://' + src;
             }
 
+            // Clean up previous HLS instance before loading new media
+            if (hls) {
+                hls.destroy();
+                hls = null;
+            }
+
             // Handle clearing source
             if (!src) {
                 if (currentVideoBlobUrl) {
@@ -1204,14 +1212,37 @@
             }
 
             const isBlobUrl = src.startsWith('blob:');
-            const mediaExtensions = /\.(mp4|webm|ogg|mov|avi|m4v|flv|f4v|mkv|wmv|ts|mp3|wav|flac|m4a)$/i;
+            const isTsFile = (fileName && fileName.toLowerCase().endsWith('.ts')) || src.toLowerCase().includes('.ts');
+            const mediaExtensions = /\.(mp4|webm|ogg|mov|avi|m4v|flv|f4v|mkv|wmv|mp3|wav|flac|m4a)$/i;
             const urlWithoutQuery = src.split('?')[0];
 
-            const isDirectMediaFile = mediaExtensions.test(urlWithoutQuery) || isBlobUrl;
+            const isDirectMediaFile = mediaExtensions.test(urlWithoutQuery) || (isBlobUrl && !isTsFile);
             const isExternalLink = src.startsWith('http://') || src.startsWith('https://');
 
-            if (isDirectMediaFile) {
-                // Mode 1: HTML5 Video/Audio (Supports Subtitles - local VTT/SRT files via Blob)
+            if (isTsFile && typeof Hls !== 'undefined' && Hls.isSupported()) {
+                // Mode 1A: HLS.js for .ts files
+                setPlayerMode('video');
+
+                // Revoke old blob URL if it exists
+                if (currentVideoBlobUrl && currentVideoBlobUrl !== src && currentVideoBlobUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(currentVideoBlobUrl);
+                }
+                currentVideoBlobUrl = isBlobUrl ? src : null;
+
+                hls = new Hls();
+                hls.loadSource(src);
+                hls.attachMedia(videoPlayer);
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    videoPlayer.play();
+                });
+                
+                videoPlayer.poster = '';
+                const sourceType = isBlobUrl ? 'Local File (Drag & Drop)' : 'Direct Link';
+                statusMessage.textContent = `TS file (${sourceType}) loaded via HLS.js. Subtitle loading is supported.`;
+                showTemporaryAlert(`Successfully switched to HLS.js for .ts playback.`, 'success');
+
+            } else if (isDirectMediaFile) {
+                // Mode 1B: HTML5 Video/Audio for other standard files
                 setPlayerMode('video');
 
                 // --- Memory Management: Revoke old Blob URL ---
@@ -1220,11 +1251,7 @@
                 }
 
                 // If the new source is a blob URL, track it
-                if (isBlobUrl) {
-                    currentVideoBlobUrl = src;
-                } else {
-                    currentVideoBlobUrl = null;
-                }
+                currentVideoBlobUrl = isBlobUrl ? src : null;
 
                 videoPlayer.removeAttribute('src');
                 videoPlayer.src = src;
@@ -1236,19 +1263,20 @@
 
                 statusMessage.textContent = `${sourceType} (${mediaType}) loaded. Local subtitle loading is supported.`;
                 showTemporaryAlert(`Successfully switched to HTML5 ${mediaType} Mode. Source Type: ${sourceType}`, 'success');
+
             } else if (isExternalLink) {
-                // Revoke any previous local video URL
+                // Mode 2: Iframe Embed
                 if (currentVideoBlobUrl) {
                     URL.revokeObjectURL(currentVideoBlobUrl);
                 }
                 currentVideoBlobUrl = null;
 
-                // Mode 2: Iframe Embed (Does NOT support local Subtitles)
                 setPlayerMode('iframe');
                 iframePlayer.src = src;
                 statusMessage.innerHTML = 'External embed loaded. <span class="text-yellow-400">Local subtitle loading is not supported in this mode.</span>';
                 showTemporaryAlert('Embed loaded in Iframe mode. Local subtitles are disabled.', 'info');
             } else {
+                // Error Mode
                 setPlayerMode('video');
                 videoPlayer.src = '';
                 videoPlayer.poster = 'https://placehold.co/800x450/cc3333/ffffff?text=Invalid+Input';
