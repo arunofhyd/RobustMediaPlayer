@@ -251,11 +251,8 @@
 
             <div class="p-6 pt-0 mt-6 space-y-6">
 
-                <!-- Alert Box -->
-                <div id="alertBox" class="hidden rounded-lg border px-4 py-3 text-sm [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground pl-11 bg-background" role="alert" aria-live="assertive">
-                    <i id="alertIcon" data-lucide="info" class="h-4 w-4 text-foreground"></i>
-                    <div id="alertText" class="font-medium"></div>
-                </div>
+                <!-- Toast Container (Fixed Bottom Right) -->
+                <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
                 <!-- Controls Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -357,7 +354,7 @@
                 </div>
 
                 <!-- Media Player Container -->
-                <div class="relative w-full aspect-video rounded-lg overflow-hidden border bg-black shadow-lg">
+                <div class="relative w-full aspect-video rounded-lg overflow-hidden border bg-black shadow-lg group">
 
                     <!-- Subtitle Demo -->
                     <div id="subtitleDemo" class="absolute z-50 bottom-8 left-1/2 transform -translate-x-1/2 pointer-events-none transition-opacity duration-300 hidden">
@@ -370,6 +367,11 @@
                          <p class="text-2xl font-bold text-foreground">Drop File Here</p>
                     </div>
 
+                    <!-- Loop Overlay Button -->
+                    <button id="loopToggle" class="absolute top-4 right-4 z-40 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-all shadow-md opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100 focus:outline-none" aria-label="Toggle Loop" title="Toggle Loop">
+                        <i data-lucide="repeat" class="h-5 w-5"></i>
+                    </button>
+
                     <!-- Feedback Indicator -->
                     <div id="feedbackIndicator" class="absolute inset-0 flex items-center justify-center pointer-events-none z-30 opacity-0 transition-opacity duration-300">
                         <div class="bg-background/50 backdrop-blur-md text-foreground rounded-full p-6 shadow-xl border border-border">
@@ -381,10 +383,6 @@
                     <video id="videoPlayer" controls preload="auto" class="w-full h-full object-contain" poster="https://placehold.co/800x450/09090b/e4e4e7?text=Ready+to+Load+Media"></video>
 
                     <iframe id="iframePlayer" class="w-full h-full hidden" allowfullscreen allow="autoplay"></iframe>
-                </div>
-
-                <div id="statusMessage" class="flex items-center justify-center p-4 text-sm text-muted-foreground bg-muted/50 rounded-lg border border-border/50">
-                    Ready to load content. Drag and drop a file onto the player area above!
                 </div>
 
             </div>
@@ -410,10 +408,12 @@
         const loadUrlBtn = document.getElementById('loadUrlBtn');
         const videoFileInput = document.getElementById('videoFile');
         const subtitleFileInput = document.getElementById('subtitleFile');
-        const statusMessage = document.getElementById('statusMessage');
+        // const statusMessage = document.getElementById('statusMessage'); // Removed
+        const toastContainer = document.getElementById('toastContainer');
         const mainCard = document.getElementById('mainCard');
         const dragDropOverlay = document.getElementById('dragDropOverlay');
         const themeToggle = document.getElementById('themeToggle');
+        const loopToggle = document.getElementById('loopToggle');
         const feedbackIndicator = document.getElementById('feedbackIndicator');
         const indicatorIconWrapper = document.getElementById('indicatorIconWrapper');
 
@@ -437,12 +437,12 @@
         const currentSubOffsetSpan = document.getElementById('currentSubOffset');
 
         // --- State Management ---
-        let alertTimeout;
         let feedbackTimeout;
         let currentVideoBlobUrl = null;
         let hls;
         let originalCues = [];
         let activeTrack = null;
+        let isLooping = false;
         const SUB_SETTINGS_KEY = 'subtitleSettings';
 
         // --- Theme Toggle Logic ---
@@ -471,6 +471,23 @@
         } else {
             setTheme('dark');
         }
+
+        // --- Loop Toggle Logic ---
+        loopToggle.addEventListener('click', () => {
+            isLooping = !isLooping;
+            videoPlayer.loop = isLooping;
+
+            // Visual feedback
+            if (isLooping) {
+                loopToggle.classList.remove('bg-black/50', 'text-white');
+                loopToggle.classList.add('bg-primary', 'text-primary-foreground');
+                showTemporaryAlert('Looping Enabled', 'info');
+            } else {
+                loopToggle.classList.remove('bg-primary', 'text-primary-foreground');
+                loopToggle.classList.add('bg-black/50', 'text-white');
+                showTemporaryAlert('Looping Disabled', 'info');
+            }
+        });
 
         // --- Subtitle Logic ---
         function loadSubtitleSettings() {
@@ -615,36 +632,40 @@
 
         // --- Helper Functions ---
         function showTemporaryAlert(message, type) {
-            const alertBox = document.getElementById('alertBox');
-            const alertText = document.getElementById('alertText');
-            const alertIcon = document.getElementById('alertIcon');
+            // Create a new toast element
+            const toast = document.createElement('div');
+            toast.className = 'flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg bg-background text-sm font-medium animate-in slide-in-from-right-full transition-all duration-300 pointer-events-auto';
 
-            if (alertTimeout) clearTimeout(alertTimeout);
-
-            alertBox.classList.remove('hidden', 'bg-destructive/15', 'text-destructive', 'border-destructive/50', 'bg-primary/15', 'text-primary', 'border-primary/50');
-
-            // Re-render icon
+            // Add border/text colors based on type
             let iconName = 'info';
             if (type === 'error') {
-                alertBox.classList.add('bg-destructive/15', 'text-destructive', 'border-destructive/50');
+                toast.classList.add('border-destructive/50', 'text-destructive');
                 iconName = 'alert-triangle';
             } else if (type === 'success') {
-                alertBox.classList.add('bg-green-500/15', 'text-green-600', 'border-green-500/50', 'dark:text-green-400');
+                toast.classList.add('border-green-500/50', 'text-green-600', 'dark:text-green-400');
                 iconName = 'check-circle';
             } else {
-                 alertBox.classList.add('bg-primary/15', 'text-primary', 'border-primary/50');
-                 iconName = 'info';
+                toast.classList.add('border-border', 'text-foreground');
+                iconName = 'info';
             }
 
-            alertIcon.setAttribute('data-lucide', iconName);
-            lucide.createIcons();
+            // Inner HTML structure with Icon and Message
+            toast.innerHTML = `
+                <i data-lucide="${iconName}" class="h-4 w-4"></i>
+                <span>${message}</span>
+            `;
 
-            alertText.textContent = message;
-            alertBox.classList.remove('hidden');
+            // Append to container
+            toastContainer.appendChild(toast);
+            lucide.createIcons({ root: toast }); // Initialize icon in new element
 
-            alertTimeout = setTimeout(() => {
-                alertBox.classList.add('hidden');
-            }, 8000);
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-full');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300); // Wait for transition
+            }, 3000);
         }
 
         function clearTracks() {
@@ -683,6 +704,16 @@
             return 'WEBVTT\n\n' + vttBody;
         }
 
+        function convertYouTubeLink(url) {
+            // Match youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            if (match && match[2].length === 11) {
+                return `https://www.youtube.com/embed/${match[2]}?autoplay=1`;
+            }
+            return url;
+        }
+
         function loadMediaSource(src, fileName = null) {
             src = src ? src.trim() : '';
             if (src && !src.startsWith('http') && !src.startsWith('blob:')) src = 'https://' + src;
@@ -697,7 +728,7 @@
                 setPlayerMode('video');
                 videoPlayer.src = '';
                 videoPlayer.poster = 'https://placehold.co/800x450/09090b/e4e4e7?text=No+Media+Loaded';
-                statusMessage.textContent = 'Media source cleared.';
+                showTemporaryAlert('Media source cleared.', 'info');
                 videoPlayer.load();
                 return;
             }
@@ -707,6 +738,9 @@
             const mediaExtensions = /\.(mp4|webm|ogg|mov|avi|m4v|flv|f4v|mkv|wmv|mp3|wav|flac|m4a)$/i;
             const urlWithoutQuery = src.split('?')[0];
             const isDirectMediaFile = mediaExtensions.test(urlWithoutQuery) || (isBlobUrl && !isTsFile);
+
+            // Check for YouTube specifically or other external links
+            const isYouTube = src.includes('youtube.com') || src.includes('youtu.be');
             const isExternalLink = src.startsWith('http');
 
             if (isTsFile && typeof Hls !== 'undefined' && Hls.isSupported()) {
@@ -721,8 +755,7 @@
                     videoPlayer.play();
                 });
                 videoPlayer.poster = '';
-                statusMessage.textContent = 'TS file loaded via HLS.js.';
-                showTemporaryAlert('Loaded .ts file.', 'success');
+                showTemporaryAlert('Loaded .ts file via HLS.js.', 'success');
             } else if (isDirectMediaFile) {
                 setPlayerMode('video');
                 if (currentVideoBlobUrl && currentVideoBlobUrl !== src && currentVideoBlobUrl.startsWith('blob:')) URL.revokeObjectURL(currentVideoBlobUrl);
@@ -732,22 +765,26 @@
                 videoPlayer.src = src;
                 videoPlayer.load();
                 videoPlayer.poster = '';
-                statusMessage.textContent = 'Media loaded.';
                 showTemporaryAlert('Media loaded successfully.', 'success');
+            } else if (isYouTube) {
+                // Special handling for YouTube
+                if (currentVideoBlobUrl) URL.revokeObjectURL(currentVideoBlobUrl);
+                currentVideoBlobUrl = null;
+                setPlayerMode('iframe');
+                iframePlayer.src = convertYouTubeLink(src);
+                showTemporaryAlert('YouTube video loaded.', 'success');
             } else if (isExternalLink) {
                 if (currentVideoBlobUrl) URL.revokeObjectURL(currentVideoBlobUrl);
                 currentVideoBlobUrl = null;
                 setPlayerMode('iframe');
                 iframePlayer.src = src;
-                statusMessage.textContent = 'External embed loaded.';
-                showTemporaryAlert('Embed loaded.', 'info');
+                showTemporaryAlert('External embed loaded.', 'info');
             } else {
                 setPlayerMode('video');
                 videoPlayer.src = '';
                 videoPlayer.poster = 'https://placehold.co/800x450/cc3333/ffffff?text=Invalid+Input';
                 videoPlayer.load();
-                statusMessage.textContent = 'Error: Unrecognized format.';
-                showTemporaryAlert('Error: Invalid URL.', 'error');
+                showTemporaryAlert('Error: Invalid URL or Format.', 'error');
             }
         }
 
@@ -950,6 +987,11 @@
 
         loadSubtitleSettings();
         setPlayerMode('video');
+
+        // Show welcome toast
+        setTimeout(() => {
+            showTemporaryAlert('Ready to load content. Drag and drop a file!', 'info');
+        }, 500);
 
     </script>
 </body>
