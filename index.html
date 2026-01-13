@@ -219,21 +219,21 @@
 
     </style>
 </head>
-<body class="bg-background text-foreground min-h-screen p-4 sm:p-8 flex flex-col items-center">
+<body class="bg-background text-foreground min-h-screen p-3 sm:p-8 flex flex-col items-center">
 
-    <div id="app" class="w-full max-w-5xl space-y-8" role="main">
+    <div id="app" class="w-full max-w-5xl space-y-4 sm:space-y-8" role="main">
 
         <!-- Header -->
-        <header class="flex flex-col sm:flex-row items-center justify-between gap-4 fade-in">
+        <header class="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 fade-in">
             <div class="flex items-center gap-3">
                 <img src="assets/logo.png"
                      alt="Robust Media Player Logo"
-                     class="h-10 w-10 rounded-md shadow-sm"
+                     class="h-8 w-8 sm:h-10 sm:w-10 rounded-md shadow-sm"
                      aria-hidden="true"
                      onerror="this.style.display='none'">
                 <div>
-                    <h1 class="text-3xl font-bold tracking-tight">Robust Media Player</h1>
-                    <p class="text-sm text-muted-foreground">Load direct video/audio files or use external embeds.</p>
+                    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Robust Media Player</h1>
+                    <p class="text-xs sm:text-sm text-muted-foreground">Load direct video/audio files or use external embeds.</p>
                 </div>
             </div>
 
@@ -249,19 +249,19 @@
         <!-- Main Card -->
         <div id="mainCard" class="rounded-xl border bg-card text-card-foreground shadow-sm fade-in">
 
-            <div class="p-6 pt-0 mt-6 space-y-6">
+            <div class="p-4 sm:p-6 pt-0 mt-4 sm:mt-6 space-y-4 sm:space-y-6">
 
-                <!-- Toast Container (Fixed Bottom Right) -->
-                <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+                <!-- Toast Container (Fixed Bottom Right/Center Mobile) -->
+                <div id="toastContainer" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 z-50 flex flex-col gap-2 pointer-events-none items-center sm:items-end"></div>
 
                 <!-- Controls Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
 
                     <!-- URL Input -->
                     <div class="md:col-span-2 space-y-2">
                         <label for="videoUrl" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Video/Embed URL</label>
                         <div class="flex w-full items-center space-x-2">
-                            <input type="text" id="videoUrl" placeholder="Enter link, e.g., https://streamtape.com/e/ or direct mp4/mp3 link"
+                            <input type="text" id="videoUrl" placeholder="Enter link..."
                                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
                             <button id="loadUrlBtn" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
                                 <span class="hidden sm:inline">Load</span>
@@ -368,8 +368,8 @@
                     </div>
 
                     <!-- Loop Overlay Button -->
-                    <button id="loopToggle" class="absolute top-4 right-4 z-40 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-all shadow-md opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100 focus:outline-none" aria-label="Toggle Loop" title="Toggle Loop">
-                        <i data-lucide="repeat" class="h-5 w-5"></i>
+                    <button id="loopToggle" class="absolute top-3 right-3 sm:top-4 sm:right-4 z-40 p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-all shadow-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:opacity-100 focus:opacity-100 focus:outline-none" aria-label="Toggle Loop" title="Toggle Loop">
+                        <i data-lucide="repeat" class="h-5 w-5 sm:h-6 sm:w-6"></i>
                     </button>
 
                     <!-- Feedback Indicator -->
