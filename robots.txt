@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://robustplayer.vercel.app/sitemap.xml

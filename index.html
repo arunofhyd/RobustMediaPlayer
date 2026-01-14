@@ -9,12 +9,30 @@
     <meta name="description" content="A robust, single-file media player supporting local files, external links, subtitles, and extensive subtitle customization.">
     <meta name="keywords" content="robust player, robust media player, rmp, media player, video player, audio player, local player, local media player, local video player with subs, subtitle customizer, VTT, SRT, local media">
 
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://robustplayer.vercel.app/">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://robustplayer.vercel.app/">
+    <meta property="og:title" content="Robust Media Player">
+    <meta property="og:description" content="A robust, single-file media player supporting local files, external links, subtitles, and extensive subtitle customization.">
+    <meta property="og:image" content="https://robustplayer.vercel.app/assets/logo.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary">
+    <meta property="twitter:url" content="https://robustplayer.vercel.app/">
+    <meta property="twitter:title" content="Robust Media Player">
+    <meta property="twitter:description" content="A robust, single-file media player supporting local files, external links, subtitles, and extensive subtitle customization.">
+    <meta property="twitter:image" content="https://robustplayer.vercel.app/assets/logo.png">
+
     <link rel="icon" href="assets/logo.png" sizes="any" type="image/png">
     <link rel="apple-touch-icon" href="assets/logo.png">
     <link rel="apple-touch-icon" sizes="76x76" href="assets/logo.png">
     <link rel="apple-touch-icon" sizes="120x120" href="assets/logo.png">
     <link rel="apple-touch-icon" sizes="152x152" href="assets/logo.png">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/logo.png">
+    <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="Robust Media Player">
@@ -992,6 +1010,17 @@
         setTimeout(() => {
             showTemporaryAlert('Ready to load content. Drag and drop a file!', 'info');
         }, 500);
+
+        // --- Service Worker Registration ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(registration => {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                }, err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
 
     </script>
 </body>
