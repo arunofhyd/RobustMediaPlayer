@@ -37,3 +37,9 @@ Built using **native HTML5** and **Tailwind CSS** for a clean, responsive aesthe
 - **Robust & Responsive**  
   - Mobile-first, fully responsive design.  
   - Strong error handling & efficient memory management (`Blob` revocation).
+  - 
+---
+
+<p align="center">
+  Made with ❤️ by <a href="mailto:arunthomas04042001@gmail.com">Arun Thomas</a>
+</p>
