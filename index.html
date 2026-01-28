@@ -264,12 +264,15 @@
             </button>
         </header>
 
-        <!-- Main Card -->
-        <div id="mainCard" class="rounded-xl border bg-card text-card-foreground shadow-sm fade-in">
+        <!-- Main Content Wrapper -->
+        <div class="flex w-full gap-4 relative">
 
-            <div class="p-4 sm:p-6 pt-0 mt-4 sm:mt-6 space-y-4 sm:space-y-6">
+            <!-- Main Card -->
+            <div id="mainCard" class="flex-grow rounded-xl border bg-card text-card-foreground shadow-sm fade-in min-w-0">
 
-                <!-- Toast Container (Fixed Bottom Right/Center Mobile) -->
+                <div class="p-4 sm:p-6 pt-0 mt-4 sm:mt-6 space-y-4 sm:space-y-6">
+
+                    <!-- Toast Container (Fixed Bottom Right/Center Mobile) -->
                 <div id="toastContainer" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 z-50 flex flex-col gap-2 pointer-events-none items-center sm:items-end"></div>
 
                 <!-- Controls Grid -->
@@ -279,8 +282,9 @@
                     <div class="md:col-span-2 space-y-2">
                         <label for="videoUrl" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Video/Embed URL</label>
                         <div class="flex w-full items-center space-x-2">
-                            <input type="text" id="videoUrl" placeholder="Enter link..."
+                            <input type="text" id="videoUrl" list="urlHistory" placeholder="Enter link..."
                                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                            <datalist id="urlHistory"></datalist>
                             <button id="loadUrlBtn" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
                                 <span class="hidden sm:inline">Load</span>
                                 <i data-lucide="arrow-right" class="h-4 w-4 sm:ml-2"></i>
@@ -335,6 +339,25 @@
                      role="region">
                     <div class="p-6 space-y-6">
 
+                        <!-- Video Filters -->
+                        <div class="space-y-3 pb-4 border-b border-border/50">
+                             <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-widest">Video Adjustments</h4>
+                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div class="space-y-2">
+                                    <label for="videoBrightness" class="text-xs font-medium text-muted-foreground flex justify-between">Brightness <span id="valBrightness">100%</span></label>
+                                    <input type="range" id="videoBrightness" min="0" max="200" value="100" class="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer">
+                                </div>
+                                <div class="space-y-2">
+                                    <label for="videoContrast" class="text-xs font-medium text-muted-foreground flex justify-between">Contrast <span id="valContrast">100%</span></label>
+                                    <input type="range" id="videoContrast" min="0" max="200" value="100" class="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer">
+                                </div>
+                                <div class="space-y-2">
+                                    <label for="videoSaturation" class="text-xs font-medium text-muted-foreground flex justify-between">Saturation <span id="valSaturation">100%</span></label>
+                                    <input type="range" id="videoSaturation" min="0" max="200" value="100" class="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer">
+                                </div>
+                             </div>
+                        </div>
+
                         <!-- Subtitle Settings -->
                         <div class="space-y-4">
                             <div class="flex items-center justify-between">
@@ -372,6 +395,17 @@
                                 <label for="subOffset" class="text-xs font-medium text-muted-foreground block mb-2">Subtitle Offset: <span id="currentSubOffset">0.0</span>s</label>
                                 <input type="range" id="subOffset" min="-10" max="10" value="0.0" step="0.1" class="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer">
                             </div>
+
+                            <div class="bg-secondary/50 rounded-lg p-3 space-y-2">
+                                <label class="text-xs font-medium text-muted-foreground block">Quick Sync</label>
+                                <p class="text-[10px] text-muted-foreground">Click when you hear the specific line.</p>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button id="syncSubStartBtn" class="bg-background border rounded px-2 py-1.5 text-xs hover:bg-accent transition-colors text-left truncate">
+                                        Wait for first sub...
+                                    </button>
+                                </div>
+                            </div>
+
                             <div class="w-full flex justify-center">
                                 <button id="resetSettingsBtn" class="text-xs text-red-500 hover:text-red-600 font-medium underline">Reset to Defaults</button>
                             </div>
@@ -405,8 +439,8 @@
                          <button id="pipToggle" class="hidden p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Toggle Picture-in-Picture" title="Picture-in-Picture">
                             <i data-lucide="picture-in-picture-2" class="h-5 w-5 sm:h-6 sm:w-6"></i>
                         </button>
-                        <button id="loopToggle" class="p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Toggle Loop" title="Toggle Loop">
-                            <i data-lucide="repeat" class="h-5 w-5 sm:h-6 sm:w-6"></i>
+                        <button id="loopToggle" class="p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Playback Mode" title="Mode: Normal">
+                            <i data-lucide="arrow-right-circle" class="h-5 w-5 sm:h-6 sm:w-6"></i>
                         </button>
                     </div>
 
@@ -423,10 +457,29 @@
                     <iframe id="iframePlayer" class="w-full h-full hidden" allowfullscreen allow="autoplay"></iframe>
                 </div>
 
+                </div>
             </div>
+
+            <!-- Playlist Sidebar -->
+            <div id="playlistSidebar" class="hidden xl:flex flex-col w-80 shrink-0 bg-card border rounded-xl shadow-sm h-[600px] sticky top-4 fade-in overflow-hidden">
+                <div class="p-4 border-b flex items-center justify-between">
+                    <h3 class="font-semibold flex items-center gap-2">
+                        <i data-lucide="list-video" class="h-5 w-5"></i>
+                        Playlist
+                    </h3>
+                    <span id="playlistCount" class="text-xs bg-secondary px-2 py-1 rounded-full text-muted-foreground">0</span>
+                </div>
+                <div id="playlistContainer" class="flex-1 overflow-y-auto p-2 space-y-1">
+                    <div class="text-center p-8 text-muted-foreground text-sm">
+                        <i data-lucide="ghost" class="h-8 w-8 mx-auto mb-2 opacity-50"></i>
+                        <p>Drop multiple files to create a queue</p>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
-        <footer class="text-center pb-8 flex flex-col items-center gap-4">
+        <footer class="text-center pb-8 flex flex-col items-center gap-4 mt-8">
             <div class="flex items-center gap-4">
                 <button id="helpBtn" class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
                     <i data-lucide="keyboard" class="h-4 w-4"></i>
@@ -515,6 +568,11 @@
         const canvas = document.getElementById('audioVisualizer');
         const canvasCtx = canvas.getContext('2d');
 
+        // Playlist Elements
+        const playlistSidebar = document.getElementById('playlistSidebar');
+        const playlistContainer = document.getElementById('playlistContainer');
+        const playlistCount = document.getElementById('playlistCount');
+
         // Demo elements
         const subtitleDemo = document.getElementById('subtitleDemo');
         const demoText = document.getElementById('demoText');
@@ -524,6 +582,15 @@
         const subFontSizeInput = document.getElementById('subFontSize');
         const subFontFamilyInput = document.getElementById('subFontFamily');
         const subOffsetInput = document.getElementById('subOffset');
+        const syncSubStartBtn = document.getElementById('syncSubStartBtn');
+
+        // Video Filter Inputs
+        const videoBrightnessInput = document.getElementById('videoBrightness');
+        const videoContrastInput = document.getElementById('videoContrast');
+        const videoSaturationInput = document.getElementById('videoSaturation');
+        const valBrightness = document.getElementById('valBrightness');
+        const valContrast = document.getElementById('valContrast');
+        const valSaturation = document.getElementById('valSaturation');
 
         const currentFontSizeSpan = document.getElementById('currentFontSize');
         const currentSubOffsetSpan = document.getElementById('currentSubOffset');
@@ -535,14 +602,19 @@
         let hls;
         let originalCues = [];
         let activeTrack = null;
-        let isLooping = false;
+        let playbackMode = 'normal'; // normal, loop-one, loop-all, shuffle
         const SUB_SETTINGS_KEY = 'subtitleSettings';
+        const URL_HISTORY_KEY = 'urlHistory';
 
         // Audio Context State
         let audioCtx;
         let audioSource;
         let analyser;
         let isVisualizerRunning = false;
+
+        // Playlist State
+        let playlist = [];
+        let currentPlaylistIndex = -1;
 
         // --- Theme Toggle Logic ---
         function setTheme(theme) {
@@ -571,22 +643,63 @@
             setTheme('dark');
         }
 
-        // --- Loop Toggle Logic ---
-        loopToggle.addEventListener('click', () => {
-            isLooping = !isLooping;
-            videoPlayer.loop = isLooping;
+        // --- Loop/Shuffle Logic ---
+        const playbackModes = ['normal', 'loop-one', 'loop-all', 'shuffle'];
 
-            // Visual feedback
-            if (isLooping) {
+        loopToggle.addEventListener('click', () => {
+            const currentIndex = playbackModes.indexOf(playbackMode);
+            const nextIndex = (currentIndex + 1) % playbackModes.length;
+            playbackMode = playbackModes[nextIndex];
+            updatePlaybackModeUI();
+        });
+
+        function updatePlaybackModeUI() {
+            let iconName = 'arrow-right-circle';
+            let title = 'Mode: Normal';
+            let active = false;
+
+            videoPlayer.loop = false; // Reset native loop
+
+            switch(playbackMode) {
+                case 'normal':
+                    iconName = 'arrow-right-circle';
+                    title = 'Mode: Normal';
+                    active = false;
+                    break;
+                case 'loop-one':
+                    iconName = 'repeat-1';
+                    title = 'Mode: Loop One';
+                    active = true;
+                    videoPlayer.loop = true;
+                    break;
+                case 'loop-all':
+                    iconName = 'repeat';
+                    title = 'Mode: Loop All';
+                    active = true;
+                    break;
+                case 'shuffle':
+                    iconName = 'shuffle';
+                    title = 'Mode: Shuffle';
+                    active = true;
+                    break;
+            }
+
+            // Update Icon
+            loopToggle.innerHTML = `<i data-lucide="${iconName}" class="h-5 w-5 sm:h-6 sm:w-6"></i>`;
+            lucide.createIcons({ root: loopToggle });
+            loopToggle.title = title;
+
+            // Update Style
+            if (active) {
                 loopToggle.classList.remove('bg-black/50', 'text-white');
                 loopToggle.classList.add('bg-primary', 'text-primary-foreground');
-                showTemporaryAlert('Looping Enabled', 'info');
             } else {
                 loopToggle.classList.remove('bg-primary', 'text-primary-foreground');
                 loopToggle.classList.add('bg-black/50', 'text-white');
-                showTemporaryAlert('Looping Disabled', 'info');
             }
-        });
+
+            showTemporaryAlert(title, 'info');
+        }
 
         // --- Subtitle Logic ---
         function loadSubtitleSettings() {
@@ -701,6 +814,21 @@
                 currentTrack.addCue(newCue);
             });
             currentTrack.mode = 'showing';
+
+            // Update Sync Button Text
+            if (originalCues.length > 0) {
+                const firstCue = originalCues[0];
+                syncSubStartBtn.textContent = `Sync to: "${firstCue.text.substring(0, 15)}..."`;
+                syncSubStartBtn.onclick = () => {
+                    const currentVidTime = videoPlayer.currentTime;
+                    // We want firstCue.start + offset = currentVidTime
+                    // So offset = currentVidTime - firstCue.start
+                    const newOffset = currentVidTime - firstCue.start;
+                    subOffsetInput.value = newOffset.toFixed(1);
+                    applySubtitleStyles();
+                    showTemporaryAlert(`Synced to ${formatTime(currentVidTime)}`, 'success');
+                };
+            }
         }
 
         [subFontColorInput, subFontFamilyInput, subFontSizeInput, subOffsetInput].forEach(input => {
@@ -948,8 +1076,38 @@
                 videoPlayer.load();
                 showTemporaryAlert('Error: Invalid URL or Format.', 'error');
                 currentMediaId = null;
+                return; // Don't save history for invalid
+            }
+
+            // Save to history if it's a URL
+            if (!fileName && src) {
+                saveUrlToHistory(src);
             }
         }
+
+        function saveUrlToHistory(url) {
+            let history = JSON.parse(localStorage.getItem(URL_HISTORY_KEY) || '[]');
+            if (!history.includes(url)) {
+                history.unshift(url);
+                if (history.length > 10) history.pop();
+                localStorage.setItem(URL_HISTORY_KEY, JSON.stringify(history));
+                updateHistoryDatalist();
+            }
+        }
+
+        function updateHistoryDatalist() {
+            const history = JSON.parse(localStorage.getItem(URL_HISTORY_KEY) || '[]');
+            const datalist = document.getElementById('urlHistory');
+            datalist.innerHTML = '';
+            history.forEach(url => {
+                const option = document.createElement('option');
+                option.value = url;
+                datalist.appendChild(option);
+            });
+        }
+
+        // Init History
+        updateHistoryDatalist();
 
         function processSubtitleFile(file) {
             if (videoPlayer.style.display === 'none' || !videoPlayer.src) {
@@ -1066,23 +1224,137 @@
 
         mainCard.addEventListener('drop', (e) => {
             dragDropOverlay.style.display = 'none';
-            const files = e.dataTransfer.files;
+            const files = Array.from(e.dataTransfer.files);
             if (files.length === 0) return;
-            const file = files[0];
-            const fileName = file.name.toLowerCase();
-            const isVideo = file.type.startsWith('video/') || fileName.match(/\.(mp4|webm|mkv|avi|mov|ts|wmv)$/i);
-            const isAudio = file.type.startsWith('audio/') || fileName.match(/\.(mp3|wav|flac|m4a)$/i);
-            const isSubtitle = fileName.endsWith('.vtt') || fileName.endsWith('.srt');
 
-            if (isVideo || isAudio) {
-                loadMediaSource(URL.createObjectURL(file), file.name);
-                videoUrlInput.value = '';
-            } else if (isSubtitle) {
-                processSubtitleFile(file);
-            } else {
-                showTemporaryAlert('Unsupported file.', 'error');
+            const mediaFiles = files.filter(file => {
+                const name = file.name.toLowerCase();
+                return file.type.startsWith('video/') || file.type.startsWith('audio/') ||
+                       name.match(/\.(mp4|webm|mkv|avi|mov|ts|wmv|mp3|wav|flac|m4a)$/i);
+            });
+
+            const subtitleFiles = files.filter(file => {
+                return file.name.toLowerCase().endsWith('.vtt') || file.name.toLowerCase().endsWith('.srt');
+            });
+
+            // Handle Playlist Logic
+            if (mediaFiles.length > 0) {
+                if (mediaFiles.length > 1 || playlist.length > 0) {
+                    // Add to playlist
+                    mediaFiles.forEach(file => {
+                        playlist.push({
+                            file: file,
+                            url: URL.createObjectURL(file),
+                            name: file.name
+                        });
+                    });
+                    renderPlaylist();
+
+                    // If playing nothing, start the first added one
+                    if (currentPlaylistIndex === -1) {
+                        playPlaylistItem(playlist.length - mediaFiles.length);
+                    } else {
+                        showTemporaryAlert(`Added ${mediaFiles.length} files to queue.`, 'success');
+                    }
+
+                    // Show sidebar on desktop
+                    playlistSidebar.classList.remove('hidden');
+                    playlistSidebar.classList.add('flex');
+                } else {
+                    // Single file drop, direct play
+                    loadMediaSource(URL.createObjectURL(mediaFiles[0]), mediaFiles[0].name);
+                    videoUrlInput.value = '';
+                }
+            }
+
+            if (subtitleFiles.length > 0) {
+                processSubtitleFile(subtitleFiles[0]); // Load first subtitle
+            }
+
+            if (mediaFiles.length === 0 && subtitleFiles.length === 0) {
+                showTemporaryAlert('Unsupported file(s).', 'error');
             }
         }, false);
+
+        // --- Playlist Logic ---
+        function renderPlaylist() {
+            playlistContainer.innerHTML = '';
+            playlistCount.textContent = playlist.length;
+
+            if (playlist.length === 0) {
+                playlistContainer.innerHTML = `
+                    <div class="text-center p-8 text-muted-foreground text-sm">
+                        <i data-lucide="ghost" class="h-8 w-8 mx-auto mb-2 opacity-50"></i>
+                        <p>Drop multiple files to create a queue</p>
+                    </div>`;
+                return;
+            }
+
+            playlist.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = `flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors text-sm group ${index === currentPlaylistIndex ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-secondary'}`;
+                el.innerHTML = `
+                    <div class="shrink-0">
+                        ${index === currentPlaylistIndex
+                            ? '<i data-lucide="play" class="h-4 w-4 fill-current"></i>'
+                            : '<span class="text-muted-foreground text-xs w-4 inline-block text-center">' + (index + 1) + '</span>'}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate">${item.name}</p>
+                    </div>
+                    <button class="opacity-0 group-hover:opacity-100 hover:text-destructive p-1" onclick="removeFromPlaylist(event, ${index})">
+                        <i data-lucide="x" class="h-3 w-3"></i>
+                    </button>
+                `;
+                el.onclick = (e) => {
+                    if(!e.target.closest('button')) playPlaylistItem(index);
+                };
+                playlistContainer.appendChild(el);
+            });
+            lucide.createIcons({ root: playlistContainer });
+        }
+
+        function playPlaylistItem(index) {
+            if (index < 0 || index >= playlist.length) return;
+            currentPlaylistIndex = index;
+            const item = playlist[index];
+            loadMediaSource(item.url, item.name);
+            renderPlaylist();
+        }
+
+        window.removeFromPlaylist = (e, index) => {
+            e.stopPropagation();
+            URL.revokeObjectURL(playlist[index].url);
+            playlist.splice(index, 1);
+
+            if (index === currentPlaylistIndex) {
+                currentPlaylistIndex = -1; // Current playing removed
+            } else if (index < currentPlaylistIndex) {
+                currentPlaylistIndex--; // Shift index
+            }
+            renderPlaylist();
+        };
+
+        // Auto-play next logic based on Mode
+        videoPlayer.addEventListener('ended', () => {
+            if (playlist.length === 0) return;
+
+            if (playbackMode === 'loop-one') {
+                // Handled natively by video.loop = true, but strictly ensuring:
+                videoPlayer.play();
+            } else if (playbackMode === 'loop-all') {
+                const nextIndex = (currentPlaylistIndex + 1) % playlist.length;
+                playPlaylistItem(nextIndex);
+            } else if (playbackMode === 'shuffle') {
+                const randomIndex = Math.floor(Math.random() * playlist.length);
+                playPlaylistItem(randomIndex);
+            } else {
+                // Normal
+                if (currentPlaylistIndex < playlist.length - 1) {
+                    playPlaylistItem(currentPlaylistIndex + 1);
+                }
+            }
+        });
 
         // --- Keyboard Shortcuts & Feedback ---
         function showFeedback(iconName) {
@@ -1238,11 +1510,35 @@
              }
         });
 
+        // --- Video Filter Logic ---
+        function applyVideoFilters() {
+            const b = videoBrightnessInput.value;
+            const c = videoContrastInput.value;
+            const s = videoSaturationInput.value;
+
+            videoPlayer.style.filter = `brightness(${b}%) contrast(${c}%) saturate(${s}%)`;
+
+            valBrightness.textContent = b + '%';
+            valContrast.textContent = c + '%';
+            valSaturation.textContent = s + '%';
+        }
+
+        [videoBrightnessInput, videoContrastInput, videoSaturationInput].forEach(input => {
+            input.addEventListener('input', applyVideoFilters);
+        });
+
         // --- Reset Settings Logic ---
         resetSettingsBtn.addEventListener('click', () => {
             if (confirm('Are you sure you want to reset all settings?')) {
                 localStorage.removeItem(SUB_SETTINGS_KEY);
                 loadSubtitleSettings(); // Reloads defaults
+
+                // Reset Video Filters
+                videoBrightnessInput.value = 100;
+                videoContrastInput.value = 100;
+                videoSaturationInput.value = 100;
+                applyVideoFilters();
+
                 showTemporaryAlert('Settings reset to defaults.', 'success');
             }
         });
