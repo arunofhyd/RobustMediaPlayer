@@ -622,6 +622,12 @@
         let playlist = [];
         let currentPlaylistIndex = -1;
 
+        // Audio Context State
+        let audioCtx;
+        let audioSource;
+        let analyser;
+        let isVisualizerRunning = false;
+
         // --- Theme Toggle Logic ---
         function setTheme(theme) {
             const root = document.documentElement;
