@@ -335,26 +335,6 @@
                      role="region">
                     <div class="p-6 space-y-6">
 
-                        <!-- Playback Settings -->
-                        <div class="space-y-3 pb-4 border-b border-border/50">
-                             <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-widest">Playback</h4>
-                             <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                <div class="space-y-2">
-                                    <label for="playbackSpeed" class="text-xs font-medium text-muted-foreground">Speed</label>
-                                    <select id="playbackSpeed" class="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                                        <option value="0.25">0.25x</option>
-                                        <option value="0.5">0.5x</option>
-                                        <option value="0.75">0.75x</option>
-                                        <option value="1" selected>Normal</option>
-                                        <option value="1.25">1.25x</option>
-                                        <option value="1.5">1.5x</option>
-                                        <option value="1.75">1.75x</option>
-                                        <option value="2">2x</option>
-                                    </select>
-                                </div>
-                             </div>
-                        </div>
-
                         <!-- Subtitle Settings -->
                         <div class="space-y-4">
                             <div class="flex items-center justify-between">
@@ -392,6 +372,7 @@
                             <input type="range" id="subOffset" min="-10" max="10" value="0.0" step="0.1" class="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer">
                         </div>
                     </div>
+                </div>
                 </div>
 
                 <!-- Media Player Container -->
@@ -468,7 +449,6 @@
         // Settings DOM elements
         const settingsToggle = document.getElementById('settingsToggle');
         const settingsPanel = document.getElementById('settingsPanel');
-        const playbackSpeedSelect = document.getElementById('playbackSpeed');
         const pipToggle = document.getElementById('pipToggle');
 
         // Demo elements
@@ -684,11 +664,6 @@
         }
 
         settingsToggle.addEventListener('click', toggleSettings);
-
-        // Playback Speed
-        playbackSpeedSelect.addEventListener('change', (e) => {
-            videoPlayer.playbackRate = parseFloat(e.target.value);
-        });
 
         // Picture-in-Picture
         if (document.pictureInPictureEnabled && pipToggle) {
