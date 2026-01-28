@@ -372,7 +372,9 @@
                                 <label for="subOffset" class="text-xs font-medium text-muted-foreground block mb-2">Subtitle Offset: <span id="currentSubOffset">0.0</span>s</label>
                                 <input type="range" id="subOffset" min="-10" max="10" value="0.0" step="0.1" class="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer">
                             </div>
-                            <button id="resetSettingsBtn" class="text-xs text-red-500 hover:text-red-600 font-medium underline">Reset to Defaults</button>
+                            <div class="w-full flex justify-center">
+                                <button id="resetSettingsBtn" class="text-xs text-red-500 hover:text-red-600 font-medium underline">Reset to Defaults</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -397,6 +399,9 @@
 
                     <!-- Overlay Controls (Top Right) -->
                     <div class="absolute top-3 right-3 sm:top-4 sm:right-4 z-40 flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                         <button id="screenshotBtn" class="p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Take Screenshot" title="Take Screenshot">
+                            <i data-lucide="camera" class="h-5 w-5 sm:h-6 sm:w-6"></i>
+                        </button>
                          <button id="pipToggle" class="hidden p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Toggle Picture-in-Picture" title="Picture-in-Picture">
                             <i data-lucide="picture-in-picture-2" class="h-5 w-5 sm:h-6 sm:w-6"></i>
                         </button>
@@ -413,7 +418,7 @@
                         </div>
                     </div>
 
-                    <video id="videoPlayer" controls preload="auto" class="w-full h-full object-contain" poster="https://placehold.co/800x450/09090b/e4e4e7?text=Ready+to+Load+Media"></video>
+                    <video id="videoPlayer" controls preload="auto" crossorigin="anonymous" class="w-full h-full object-contain" poster="https://placehold.co/800x450/09090b/e4e4e7?text=Ready+to+Load+Media"></video>
 
                     <iframe id="iframePlayer" class="w-full h-full hidden" allowfullscreen allow="autoplay"></iframe>
                 </div>
@@ -498,6 +503,7 @@
         const settingsToggle = document.getElementById('settingsToggle');
         const settingsPanel = document.getElementById('settingsPanel');
         const pipToggle = document.getElementById('pipToggle');
+        const screenshotBtn = document.getElementById('screenshotBtn');
         const resetSettingsBtn = document.getElementById('resetSettingsBtn');
 
         // Help Modal Elements
@@ -744,6 +750,33 @@
                  }
              });
         }
+
+        // Screenshot Logic
+        screenshotBtn.addEventListener('click', () => {
+            if (videoPlayer.style.display === 'none' || !videoPlayer.src) {
+                showTemporaryAlert('Load a video first.', 'error');
+                return;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = videoPlayer.videoWidth;
+            canvas.height = videoPlayer.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(videoPlayer, 0, 0, canvas.width, canvas.height);
+
+            try {
+                const dataUrl = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `screenshot_${Date.now()}.png`;
+                link.href = dataUrl;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showTemporaryAlert('Screenshot saved.', 'success');
+            } catch (err) {
+                showTemporaryAlert('Screenshot failed (CORS/Security).', 'error');
+            }
+        });
 
 
         // --- Helper Functions ---
@@ -1000,11 +1033,13 @@
              }
         });
 
+        let lastSavedTime = 0;
         videoPlayer.addEventListener('timeupdate', () => {
             if (currentMediaId && !videoPlayer.paused) {
-                 // Save roughly every second
-                 if (Math.floor(videoPlayer.currentTime) % 2 === 0) {
+                 const currentTimeInt = Math.floor(videoPlayer.currentTime);
+                 if (currentTimeInt !== lastSavedTime && currentTimeInt % 2 === 0) {
                       localStorage.setItem('resume_' + currentMediaId, videoPlayer.currentTime);
+                      lastSavedTime = currentTimeInt;
                  }
             }
         });
@@ -1138,55 +1173,60 @@
         videoPlayer.addEventListener('pause', () => showFeedback('fa-pause'));
 
         // --- Audio Visualizer Logic ---
-        function initAudioVisualizer() {
-            if (audioCtx) return; // Already initialized
+        let dataArray;
+        let bufferLength;
 
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                audioCtx = new AudioContext();
-                analyser = audioCtx.createAnalyser();
-                audioSource = audioCtx.createMediaElementSource(videoPlayer);
-                audioSource.connect(analyser);
-                analyser.connect(audioCtx.destination);
+        function drawVisualizer() {
+            if (videoPlayer.paused || videoPlayer.ended) {
+                isVisualizerRunning = false;
+                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+                return;
+            }
+            requestAnimationFrame(drawVisualizer);
+            isVisualizerRunning = true;
 
-                analyser.fftSize = 256;
-                const bufferLength = analyser.frequencyBinCount;
-                const dataArray = new Uint8Array(bufferLength);
+            if (analyser && dataArray) {
+                analyser.getByteFrequencyData(dataArray);
 
-                canvas.width = canvas.offsetWidth;
-                canvas.height = canvas.offsetHeight;
+                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+                const barWidth = (canvas.width / bufferLength) * 2.5;
+                let barHeight;
+                let x = 0;
 
-                function draw() {
-                    if (videoPlayer.paused || videoPlayer.ended) {
-                        isVisualizerRunning = false;
-                        canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-                        return;
-                    }
-                    requestAnimationFrame(draw);
-                    isVisualizerRunning = true;
-
-                    analyser.getByteFrequencyData(dataArray);
-
-                    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-                    const barWidth = (canvas.width / bufferLength) * 2.5;
-                    let barHeight;
-                    let x = 0;
-
-                    for(let i = 0; i < bufferLength; i++) {
-                        barHeight = dataArray[i] / 2; // Scale down
-
-                        // Use CSS variables for color if possible, else fallback
-                        // Simple gradient based on height
-                        canvasCtx.fillStyle = `rgba(59, 130, 246, ${barHeight / 200})`; // Primary Blue
-                        canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-
-                        x += barWidth + 1;
-                    }
+                for(let i = 0; i < bufferLength; i++) {
+                    barHeight = dataArray[i] / 2; // Scale down
+                    canvasCtx.fillStyle = `rgba(59, 130, 246, ${barHeight / 200})`; // Primary Blue
+                    canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                    x += barWidth + 1;
                 }
+            }
+        }
 
-                draw();
-            } catch (e) {
-                console.warn("Audio Context init failed (likely due to autoplay policy or CORS):", e);
+        function initAudioVisualizer() {
+            if (!audioCtx) {
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    audioCtx = new AudioContext();
+                    analyser = audioCtx.createAnalyser();
+                    audioSource = audioCtx.createMediaElementSource(videoPlayer);
+                    audioSource.connect(analyser);
+                    analyser.connect(audioCtx.destination);
+
+                    analyser.fftSize = 256;
+                    bufferLength = analyser.frequencyBinCount;
+                    dataArray = new Uint8Array(bufferLength);
+
+                    canvas.width = canvas.offsetWidth;
+                    canvas.height = canvas.offsetHeight;
+                } catch (e) {
+                    console.warn("Audio Context init failed:", e);
+                    return;
+                }
+            }
+
+            // Restart loop if not running
+            if (!isVisualizerRunning && !videoPlayer.paused) {
+                drawVisualizer();
             }
         }
 
