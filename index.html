@@ -433,6 +433,9 @@
 
                     <!-- Overlay Controls (Top Right) -->
                     <div id="overlayControls" class="absolute top-3 right-3 sm:top-4 sm:right-4 z-40 flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                         <button id="visualizerBtn" class="hidden p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-white/20 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Change Visualizer Style" title="Change Visualizer Style">
+                            <i data-lucide="wand-2" class="h-5 w-5 sm:h-6 sm:w-6"></i>
+                        </button>
                          <button id="screenshotBtn" class="p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-white/20 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Take Screenshot" title="Take Screenshot">
                             <i data-lucide="camera" class="h-5 w-5 sm:h-6 sm:w-6"></i>
                         </button>
@@ -562,6 +565,7 @@
         const settingsPanel = document.getElementById('settingsPanel');
         const pipToggle = document.getElementById('pipToggle');
         const screenshotBtn = document.getElementById('screenshotBtn');
+        const visualizerBtn = document.getElementById('visualizerBtn');
         const resetSettingsBtn = document.getElementById('resetSettingsBtn');
 
         // Help Modal Elements
@@ -1059,10 +1063,12 @@
                 canvas.classList.remove('hidden');
                 canvas.classList.add('opacity-100');
                 canvas.classList.remove('opacity-90');
+                if (visualizerBtn) visualizerBtn.classList.remove('hidden'); // Show randomizer button
                 // Removed logo poster to show visualizer clearly on black background
                 videoPlayer.poster = '';
             } else {
                 canvas.classList.add('hidden');
+                if (visualizerBtn) visualizerBtn.classList.add('hidden'); // Hide randomizer button
                 isVisualizerRunning = false;
             }
 
@@ -1567,7 +1573,74 @@
             visualizerStyle = styles[Math.floor(Math.random() * styles.length)];
             visualizerHue = Math.floor(Math.random() * 360);
             console.log(`Visualizer Mode: ${visualizerStyle}, Hue: ${visualizerHue}`);
+            showTemporaryAlert(`Visualizer: ${visualizerStyle.charAt(0).toUpperCase() + visualizerStyle.slice(1)}`, 'info');
         }
+
+        visualizerBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent drag/drop interference
+            randomizeVisualizer();
+            // Force single frame if paused to update look
+            if (videoPlayer.paused) {
+                // Ensure context is running if possible
+                if (analyser && dataArray) {
+                    canvasCtx.clearRect(0, 0, canvas.width, canvas.height); // Clear first
+                    // We need to call the drawing logic once.
+                    // drawVisualizer loops, so we can't just call it or it will start loop if paused?
+                    // Actually drawVisualizer has a guard: if (videoPlayer.paused) ... return;
+                    // We should bypass that for a single frame or just force it.
+                    // Let's refactor drawVisualizer to separate the "render frame" from the "loop".
+
+                    // Simple hack: Temporarily bypass the paused check for one call?
+                    // Or just duplicate the render logic? Refactoring is better but risky for regression.
+                    // Let's copy the render logic for the manual trigger:
+
+                    if (visualizerStyle === 'wave') {
+                        analyser.getByteTimeDomainData(dataArray);
+                    } else {
+                        analyser.getByteFrequencyData(dataArray);
+                    }
+                    const width = canvas.width;
+                    const height = canvas.height;
+
+                    if (visualizerStyle === 'bars') {
+                        const barWidth = (width / bufferLength) * 2.5;
+                        let barHeight;
+                        let x = 0;
+                        for(let i = 0; i < bufferLength; i++) {
+                            barHeight = (dataArray[i] / 255) * height;
+                            canvasCtx.fillStyle = `hsla(${visualizerHue}, 80%, 60%, ${(barHeight/height) + 0.2})`;
+                            canvasCtx.fillRect(x, height - barHeight, barWidth, barHeight);
+                            x += barWidth + 1;
+                        }
+                    } else if (visualizerStyle === 'mirror') {
+                        const barWidth = (width / bufferLength) * 2;
+                        let barHeight;
+                        let x = width / 2;
+                        for(let i = 0; i < bufferLength; i++) {
+                            barHeight = (dataArray[i] / 255) * (height / 1.5);
+                            canvasCtx.fillStyle = `hsla(${visualizerHue}, 70%, 50%, ${(barHeight/height) + 0.3})`;
+                            canvasCtx.fillRect(width/2 + (i * barWidth), (height - barHeight)/2, barWidth, barHeight);
+                            canvasCtx.fillRect(width/2 - (i * barWidth) - barWidth, (height - barHeight)/2, barWidth, barHeight);
+                        }
+                    } else if (visualizerStyle === 'wave') {
+                        canvasCtx.lineWidth = 2;
+                        canvasCtx.strokeStyle = `hsla(${visualizerHue}, 100%, 70%, 0.8)`;
+                        canvasCtx.beginPath();
+                        const sliceWidth = width * 1.0 / bufferLength;
+                        let x = 0;
+                        for(let i = 0; i < bufferLength; i++) {
+                            const v = dataArray[i] / 128.0;
+                            const y = v * height / 2;
+                            if(i === 0) canvasCtx.moveTo(x, y);
+                            else canvasCtx.lineTo(x, y);
+                            x += sliceWidth;
+                        }
+                        canvasCtx.lineTo(canvas.width, canvas.height/2);
+                        canvasCtx.stroke();
+                    }
+                }
+            }
+        });
 
         function drawVisualizer() {
             if (videoPlayer.paused || videoPlayer.ended) {
