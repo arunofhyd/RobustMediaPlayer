@@ -393,7 +393,7 @@
                         <div class="pt-4 border-t space-y-4">
                             <div>
                                 <label for="subOffset" class="text-xs font-medium text-muted-foreground block mb-2">Subtitle Offset: <span id="currentSubOffset">0.0</span>s</label>
-                                <input type="range" id="subOffset" min="-10" max="10" value="0.0" step="0.1" class="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer">
+                                <input type="range" id="subOffset" min="-60" max="60" value="0.0" step="0.1" class="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer">
                             </div>
 
                             <div class="bg-secondary/50 rounded-lg p-3 space-y-2">
@@ -481,11 +481,11 @@
 
         <footer class="text-center pb-8 flex flex-col items-center gap-4 mt-8">
             <div class="flex items-center gap-4">
-                <button id="playlistToggleBtn" class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors hidden xl:inline-flex">
+                <button id="playlistToggleBtn" class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
                     <i data-lucide="list-video" class="h-4 w-4"></i>
                     <span>Playlist</span>
                 </button>
-                <span class="text-muted-foreground/30 hidden xl:inline">|</span>
+                <span class="text-muted-foreground/30">|</span>
                 <button id="helpBtn" class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
                     <i data-lucide="keyboard" class="h-4 w-4"></i>
                     <span>Shortcuts</span>
@@ -1230,38 +1230,23 @@
             }
         });
 
-        // --- Drag & Drop ---
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            mainCard.addEventListener(eventName, (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-            }, false);
-        });
+        // --- Drag & Drop Helpers ---
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
 
-        mainCard.addEventListener('dragenter', (e) => {
-            if (videoPlayer.style.display !== 'none' && e.dataTransfer.types.includes('Files')) {
-                dragDropOverlay.style.display = 'flex';
-            }
-        }, false);
+        function handleFileDrop(files) {
+            const fileList = Array.from(files);
+            if (fileList.length === 0) return;
 
-        mainCard.addEventListener('dragleave', (e) => {
-            if (!mainCard.contains(e.relatedTarget)) {
-                dragDropOverlay.style.display = 'none';
-            }
-        }, false);
-
-        mainCard.addEventListener('drop', (e) => {
-            dragDropOverlay.style.display = 'none';
-            const files = Array.from(e.dataTransfer.files);
-            if (files.length === 0) return;
-
-            const mediaFiles = files.filter(file => {
+            const mediaFiles = fileList.filter(file => {
                 const name = file.name.toLowerCase();
                 return file.type.startsWith('video/') || file.type.startsWith('audio/') ||
                        name.match(/\.(mp4|webm|mkv|avi|mov|ts|wmv|mp3|wav|flac|m4a)$/i);
             });
 
-            const subtitleFiles = files.filter(file => {
+            const subtitleFiles = fileList.filter(file => {
                 return file.name.toLowerCase().endsWith('.vtt') || file.name.toLowerCase().endsWith('.srt');
             });
 
@@ -1285,7 +1270,7 @@
                         showTemporaryAlert(`Added ${mediaFiles.length} files to queue.`, 'success');
                     }
 
-                    // Show sidebar on desktop
+                    // Show sidebar
                     playlistSidebar.classList.remove('hidden');
                     playlistSidebar.classList.add('flex');
                 } else {
@@ -1296,11 +1281,69 @@
             }
 
             if (subtitleFiles.length > 0) {
-                processSubtitleFile(subtitleFiles[0]); // Load first subtitle
+                processSubtitleFile(subtitleFiles[0]);
             }
 
             if (mediaFiles.length === 0 && subtitleFiles.length === 0) {
                 showTemporaryAlert('Unsupported file(s).', 'error');
+            }
+        }
+
+        // --- Drag & Drop: Main Card ---
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            mainCard.addEventListener(eventName, handleDragOver, false);
+        });
+
+        mainCard.addEventListener('dragenter', (e) => {
+            if (videoPlayer.style.display !== 'none' && e.dataTransfer.types.includes('Files')) {
+                dragDropOverlay.style.display = 'flex';
+            }
+        }, false);
+
+        mainCard.addEventListener('dragleave', (e) => {
+            if (!mainCard.contains(e.relatedTarget)) {
+                dragDropOverlay.style.display = 'none';
+            }
+        }, false);
+
+        mainCard.addEventListener('drop', (e) => {
+            dragDropOverlay.style.display = 'none';
+            handleFileDrop(e.dataTransfer.files);
+        }, false);
+
+        // --- Drag & Drop: Playlist Sidebar ---
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            playlistSidebar.addEventListener(eventName, handleDragOver, false);
+        });
+
+        playlistSidebar.addEventListener('drop', (e) => {
+            // Force playlist mode logic by ensuring playlist has items or treating drop as add
+            // We can reuse handleFileDrop which adds to playlist if playlist.length > 0
+            // But if empty, handleFileDrop plays directly. We want explicit add here.
+
+            e.preventDefault();
+            const files = Array.from(e.dataTransfer.files);
+            const mediaFiles = files.filter(file => {
+                const name = file.name.toLowerCase();
+                return file.type.startsWith('video/') || file.type.startsWith('audio/') ||
+                       name.match(/\.(mp4|webm|mkv|avi|mov|ts|wmv|mp3|wav|flac|m4a)$/i);
+            });
+
+            if (mediaFiles.length > 0) {
+                mediaFiles.forEach(file => {
+                    playlist.push({
+                        file: file,
+                        url: URL.createObjectURL(file),
+                        name: file.name
+                    });
+                });
+                renderPlaylist();
+                showTemporaryAlert(`Added ${mediaFiles.length} files to queue.`, 'success');
+
+                // If nothing playing, play first
+                if (currentPlaylistIndex === -1) {
+                    playPlaylistItem(0);
+                }
             }
         }, false);
 
@@ -1369,6 +1412,8 @@
             currentPlaylistIndex = index;
             const item = playlist[index];
             loadMediaSource(item.url, item.name);
+            // Explicitly play after loading source from playlist
+            videoPlayer.play().catch(e => console.log('Autoplay blocked', e));
             renderPlaylist();
         }
 
