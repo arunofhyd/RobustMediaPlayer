@@ -270,7 +270,7 @@
             <!-- Main Card -->
             <div id="mainCard" class="flex-grow rounded-xl border bg-card text-card-foreground shadow-sm fade-in min-w-0">
 
-                <div class="p-4 sm:p-6 pt-0 mt-4 sm:mt-6 space-y-4 sm:space-y-6">
+                <div class="p-4 sm:p-6 pt-0 space-y-4 sm:space-y-6">
 
                     <!-- Toast Container (Fixed Bottom Right/Center Mobile) -->
                 <div id="toastContainer" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 z-50 flex flex-col gap-2 pointer-events-none items-center sm:items-end"></div>
@@ -432,14 +432,14 @@
                     </div>
 
                     <!-- Overlay Controls (Top Right) -->
-                    <div class="absolute top-3 right-3 sm:top-4 sm:right-4 z-40 flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                         <button id="screenshotBtn" class="p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Take Screenshot" title="Take Screenshot">
+                    <div id="overlayControls" class="absolute top-3 right-3 sm:top-4 sm:right-4 z-40 flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                         <button id="screenshotBtn" class="p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-white/20 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Take Screenshot" title="Take Screenshot">
                             <i data-lucide="camera" class="h-5 w-5 sm:h-6 sm:w-6"></i>
                         </button>
-                         <button id="pipToggle" class="hidden p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Toggle Picture-in-Picture" title="Picture-in-Picture">
+                         <button id="pipToggle" class="hidden p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-white/20 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Toggle Picture-in-Picture" title="Picture-in-Picture">
                             <i data-lucide="picture-in-picture-2" class="h-5 w-5 sm:h-6 sm:w-6"></i>
                         </button>
-                        <button id="loopToggle" class="p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Playback Mode" title="Mode: Normal">
+                        <button id="loopToggle" class="p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-white/20 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Playback Mode" title="Mode: Normal">
                             <i data-lucide="arrow-right-circle" class="h-5 w-5 sm:h-6 sm:w-6"></i>
                         </button>
                     </div>
@@ -481,6 +481,11 @@
 
         <footer class="text-center pb-8 flex flex-col items-center gap-4 mt-8">
             <div class="flex items-center gap-4">
+                <button id="playlistToggleBtn" class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors hidden xl:inline-flex">
+                    <i data-lucide="list-video" class="h-4 w-4"></i>
+                    <span>Playlist</span>
+                </button>
+                <span class="text-muted-foreground/30 hidden xl:inline">|</span>
                 <button id="helpBtn" class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
                     <i data-lucide="keyboard" class="h-4 w-4"></i>
                     <span>Shortcuts</span>
@@ -563,6 +568,7 @@
         const helpBtn = document.getElementById('helpBtn');
         const helpModal = document.getElementById('helpModal');
         const closeHelpBtn = document.getElementById('closeHelpBtn');
+        const playlistToggleBtn = document.getElementById('playlistToggleBtn');
 
         // Audio Visualizer Elements
         const canvas = document.getElementById('audioVisualizer');
@@ -956,11 +962,13 @@
         }
 
         function setPlayerMode(mode) {
+            const overlayControls = document.getElementById('overlayControls');
             if (mode === 'video') {
                 videoPlayer.style.display = 'block';
                 iframePlayer.style.display = 'none';
                 iframePlayer.src = '';
                 dragDropOverlay.classList.remove('pointer-events-none');
+                if (overlayControls) overlayControls.classList.remove('hidden');
             } else if (mode === 'iframe') {
                 videoPlayer.style.display = 'none';
                 videoPlayer.pause();
@@ -970,6 +978,7 @@
                 clearTracks();
                 iframePlayer.style.display = 'block';
                 dragDropOverlay.classList.add('pointer-events-none');
+                if (overlayControls) overlayControls.classList.add('hidden');
                 if (currentVideoBlobUrl) URL.revokeObjectURL(currentVideoBlobUrl);
                 currentVideoBlobUrl = null;
             }
@@ -1000,8 +1009,18 @@
                 hls = null;
             }
 
+            // Helper to safely revoke old blob if not in playlist
+            const safelyRevokeBlob = (blobUrl) => {
+                if (blobUrl && blobUrl.startsWith('blob:')) {
+                    const isInPlaylist = playlist.some(item => item.url === blobUrl);
+                    if (!isInPlaylist) {
+                        URL.revokeObjectURL(blobUrl);
+                    }
+                }
+            };
+
             if (!src) {
-                if (currentVideoBlobUrl) URL.revokeObjectURL(currentVideoBlobUrl);
+                safelyRevokeBlob(currentVideoBlobUrl);
                 setPlayerMode('video');
                 videoPlayer.src = '';
                 videoPlayer.poster = 'https://placehold.co/800x450/09090b/e4e4e7?text=No+Media+Loaded';
@@ -1030,7 +1049,7 @@
 
             if (isTsFile && typeof Hls !== 'undefined' && Hls.isSupported()) {
                 setPlayerMode('video');
-                if (currentVideoBlobUrl && currentVideoBlobUrl !== src && currentVideoBlobUrl.startsWith('blob:')) URL.revokeObjectURL(currentVideoBlobUrl);
+                if (currentVideoBlobUrl && currentVideoBlobUrl !== src) safelyRevokeBlob(currentVideoBlobUrl);
                 currentVideoBlobUrl = isBlobUrl ? src : null;
 
                 hls = new Hls();
@@ -1043,7 +1062,7 @@
                 showTemporaryAlert('Loaded .ts file via HLS.js.', 'success');
             } else if (isDirectMediaFile) {
                 setPlayerMode('video');
-                if (currentVideoBlobUrl && currentVideoBlobUrl !== src && currentVideoBlobUrl.startsWith('blob:')) URL.revokeObjectURL(currentVideoBlobUrl);
+                if (currentVideoBlobUrl && currentVideoBlobUrl !== src) safelyRevokeBlob(currentVideoBlobUrl);
                 currentVideoBlobUrl = isBlobUrl ? src : null;
 
                 videoPlayer.removeAttribute('src');
@@ -1056,14 +1075,14 @@
                 // We'll init it on first user interaction (play) to respect autoplay policies
             } else if (isYouTube) {
                 // Special handling for YouTube
-                if (currentVideoBlobUrl) URL.revokeObjectURL(currentVideoBlobUrl);
+                safelyRevokeBlob(currentVideoBlobUrl);
                 currentVideoBlobUrl = null;
                 setPlayerMode('iframe');
                 iframePlayer.src = convertYouTubeLink(src);
                 currentMediaId = null; // Can't resume iframe
                 showTemporaryAlert('YouTube video loaded.', 'success');
             } else if (isExternalLink) {
-                if (currentVideoBlobUrl) URL.revokeObjectURL(currentVideoBlobUrl);
+                safelyRevokeBlob(currentVideoBlobUrl);
                 currentVideoBlobUrl = null;
                 setPlayerMode('iframe');
                 iframePlayer.src = src;
@@ -1176,7 +1195,16 @@
             if (file) processSubtitleFile(file);
         });
 
-        videoPlayer.addEventListener('error', () => {
+        videoPlayer.addEventListener('error', (e) => {
+            // CORS Retry Logic
+            if (videoPlayer.getAttribute('crossorigin') === 'anonymous') {
+                console.warn("Video failed to load with CORS. Retrying without CORS (Visualizer/Screenshot disabled).");
+                videoPlayer.removeAttribute('crossorigin');
+                videoPlayer.load();
+                // Prevent infinite loop if it fails again is handled by the browser not firing error again for same error state immediately or just failing hard
+                // Ideally we'd remove this listener or add a flag, but for simple retry:
+                return;
+            }
             videoPlayer.poster = 'https://placehold.co/800x450/cc3333/ffffff?text=Media+Loading+Failed';
             showTemporaryAlert('Media failed to load.', 'error');
         });
@@ -1277,6 +1305,17 @@
         }, false);
 
         // --- Playlist Logic ---
+        playlistToggleBtn.addEventListener('click', () => {
+            const isHidden = playlistSidebar.classList.contains('hidden');
+            if (isHidden) {
+                playlistSidebar.classList.remove('hidden');
+                playlistSidebar.classList.add('flex');
+            } else {
+                playlistSidebar.classList.add('hidden');
+                playlistSidebar.classList.remove('flex');
+            }
+        });
+
         function renderPlaylist() {
             playlistContainer.innerHTML = '';
             playlistCount.textContent = playlist.length;
@@ -1293,19 +1332,30 @@
             playlist.forEach((item, index) => {
                 const el = document.createElement('div');
                 el.className = `flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors text-sm group ${index === currentPlaylistIndex ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-secondary'}`;
-                el.innerHTML = `
-                    <div class="shrink-0">
-                        ${index === currentPlaylistIndex
-                            ? '<i data-lucide="play" class="h-4 w-4 fill-current"></i>'
-                            : '<span class="text-muted-foreground text-xs w-4 inline-block text-center">' + (index + 1) + '</span>'}
-                    </div>
-                    <div class="min-w-0 flex-1">
-                        <p class="truncate">${item.name}</p>
-                    </div>
-                    <button class="opacity-0 group-hover:opacity-100 hover:text-destructive p-1" onclick="removeFromPlaylist(event, ${index})">
-                        <i data-lucide="x" class="h-3 w-3"></i>
-                    </button>
-                `;
+
+                // Securely create elements
+                const iconDiv = document.createElement('div');
+                iconDiv.className = 'shrink-0';
+                iconDiv.innerHTML = index === currentPlaylistIndex
+                    ? '<i data-lucide="play" class="h-4 w-4 fill-current"></i>'
+                    : `<span class="text-muted-foreground text-xs w-4 inline-block text-center">${index + 1}</span>`;
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'min-w-0 flex-1';
+                const nameP = document.createElement('p');
+                nameP.className = 'truncate';
+                nameP.textContent = item.name; // Secure Text Content
+                nameDiv.appendChild(nameP);
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'opacity-0 group-hover:opacity-100 hover:text-destructive p-1';
+                delBtn.innerHTML = '<i data-lucide="x" class="h-3 w-3"></i>';
+                delBtn.onclick = (e) => window.removeFromPlaylist(e, index);
+
+                el.appendChild(iconDiv);
+                el.appendChild(nameDiv);
+                el.appendChild(delBtn);
+
                 el.onclick = (e) => {
                     if(!e.target.closest('button')) playPlaylistItem(index);
                 };
