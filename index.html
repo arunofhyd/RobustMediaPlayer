@@ -619,6 +619,7 @@
         let isVisualizerRunning = false;
         let visualizerStyle = 'bars';
         let visualizerHue = 217; // Default Blue
+        let isAudioFile = false;
 
         // Playlist State
         let playlist = [];
@@ -1049,6 +1050,22 @@
             const isYouTube = src.includes('youtube.com') || src.includes('youtu.be');
             const isExternalLink = src.startsWith('http');
 
+            // Detect Audio File
+            const audioExtensions = /\.(mp3|wav|flac|m4a|aac|ogg)$/i;
+            isAudioFile = (fileName && audioExtensions.test(fileName)) || audioExtensions.test(urlWithoutQuery);
+
+            // Toggle Visualizer Visibility
+            if (isAudioFile) {
+                canvas.classList.remove('hidden');
+                canvas.classList.add('opacity-100');
+                canvas.classList.remove('opacity-90');
+                // Set a poster or placeholder for audio if needed
+                videoPlayer.poster = 'assets/logo.png'; // Or some music icon
+            } else {
+                canvas.classList.add('hidden');
+                isVisualizerRunning = false;
+            }
+
             if (isTsFile && typeof Hls !== 'undefined' && Hls.isSupported()) {
                 setPlayerMode('video');
                 if (currentVideoBlobUrl && currentVideoBlobUrl !== src) safelyRevokeBlob(currentVideoBlobUrl);
@@ -1070,11 +1087,8 @@
                 videoPlayer.removeAttribute('src');
                 videoPlayer.src = src;
                 videoPlayer.load();
-                videoPlayer.poster = '';
+                if (!isAudioFile) videoPlayer.poster = '';
                 showTemporaryAlert('Media loaded successfully.', 'success');
-
-                // Initialize Visualizer if it's an audio file (or has audio)
-                // We'll init it on first user interaction (play) to respect autoplay policies
             } else if (isYouTube) {
                 // Special handling for YouTube
                 safelyRevokeBlob(currentVideoBlobUrl);
@@ -1618,6 +1632,9 @@
         }
 
         function initAudioVisualizer() {
+            // Only run if audio file
+            if (!isAudioFile) return;
+
             // Randomize on new init or resume
             if (!isVisualizerRunning) randomizeVisualizer();
 
