@@ -395,7 +395,7 @@
                                 <label for="subOffset" class="text-xs font-medium text-muted-foreground block mb-2">Subtitle Offset: <span id="currentSubOffset">0.0</span>s</label>
                                 <input type="range" id="subOffset" min="-60" max="60" value="0.0" step="0.1" class="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer">
                             </div>
-
+                            
                             <div class="bg-secondary/50 rounded-lg p-3 space-y-2">
                                 <label class="text-xs font-medium text-muted-foreground block">Quick Sync</label>
                                 <p class="text-[10px] text-muted-foreground">Click when you hear the specific line.</p>
@@ -622,12 +622,6 @@
         let playlist = [];
         let currentPlaylistIndex = -1;
 
-        // Audio Context State
-        let audioCtx;
-        let audioSource;
-        let analyser;
-        let isVisualizerRunning = false;
-
         // --- Theme Toggle Logic ---
         function setTheme(theme) {
             const root = document.documentElement;
@@ -657,7 +651,7 @@
 
         // --- Loop/Shuffle Logic ---
         const playbackModes = ['normal', 'loop-one', 'loop-all', 'shuffle'];
-
+        
         loopToggle.addEventListener('click', () => {
             const currentIndex = playbackModes.indexOf(playbackMode);
             const nextIndex = (currentIndex + 1) % playbackModes.length;
@@ -709,7 +703,7 @@
                 loopToggle.classList.remove('bg-primary', 'text-primary-foreground');
                 loopToggle.classList.add('bg-black/50', 'text-white');
             }
-
+            
             showTemporaryAlert(title, 'info');
         }
 
@@ -826,7 +820,7 @@
                 currentTrack.addCue(newCue);
             });
             currentTrack.mode = 'showing';
-
+            
             // Update Sync Button Text
             if (originalCues.length > 0) {
                 const firstCue = originalCues[0];
@@ -1076,7 +1070,7 @@
                 videoPlayer.load();
                 videoPlayer.poster = '';
                 showTemporaryAlert('Media loaded successfully.', 'success');
-
+                
                 // Initialize Visualizer if it's an audio file (or has audio)
                 // We'll init it on first user interaction (play) to respect autoplay policies
             } else if (isYouTube) {
@@ -1130,7 +1124,7 @@
                 datalist.appendChild(option);
             });
         }
-
+        
         // Init History
         updateHistoryDatalist();
 
@@ -1209,7 +1203,7 @@
                 videoPlayer.load();
                 // Prevent infinite loop if it fails again is handled by the browser not firing error again for same error state immediately or just failing hard
                 // Ideally we'd remove this listener or add a flag, but for simple retry:
-                return;
+                return; 
             }
             videoPlayer.poster = 'https://placehold.co/800x450/cc3333/ffffff?text=Media+Loading+Failed';
             showTemporaryAlert('Media failed to load.', 'error');
@@ -1248,7 +1242,7 @@
 
             const mediaFiles = fileList.filter(file => {
                 const name = file.name.toLowerCase();
-                return file.type.startsWith('video/') || file.type.startsWith('audio/') ||
+                return file.type.startsWith('video/') || file.type.startsWith('audio/') || 
                        name.match(/\.(mp4|webm|mkv|avi|mov|ts|wmv|mp3|wav|flac|m4a)$/i);
             });
 
@@ -1268,14 +1262,14 @@
                         });
                     });
                     renderPlaylist();
-
+                    
                     // If playing nothing, start the first added one
                     if (currentPlaylistIndex === -1) {
                         playPlaylistItem(playlist.length - mediaFiles.length);
                     } else {
                         showTemporaryAlert(`Added ${mediaFiles.length} files to queue.`, 'success');
                     }
-
+                    
                     // Show sidebar
                     playlistSidebar.classList.remove('hidden');
                     playlistSidebar.classList.add('flex');
@@ -1287,9 +1281,9 @@
             }
 
             if (subtitleFiles.length > 0) {
-                processSubtitleFile(subtitleFiles[0]);
+                processSubtitleFile(subtitleFiles[0]); 
             }
-
+            
             if (mediaFiles.length === 0 && subtitleFiles.length === 0) {
                 showTemporaryAlert('Unsupported file(s).', 'error');
             }
@@ -1326,12 +1320,12 @@
             // Force playlist mode logic by ensuring playlist has items or treating drop as add
             // We can reuse handleFileDrop which adds to playlist if playlist.length > 0
             // But if empty, handleFileDrop plays directly. We want explicit add here.
-
+            
             e.preventDefault();
             const files = Array.from(e.dataTransfer.files);
             const mediaFiles = files.filter(file => {
                 const name = file.name.toLowerCase();
-                return file.type.startsWith('video/') || file.type.startsWith('audio/') ||
+                return file.type.startsWith('video/') || file.type.startsWith('audio/') || 
                        name.match(/\.(mp4|webm|mkv|avi|mov|ts|wmv|mp3|wav|flac|m4a)$/i);
             });
 
@@ -1345,7 +1339,7 @@
                 });
                 renderPlaylist();
                 showTemporaryAlert(`Added ${mediaFiles.length} files to queue.`, 'success');
-
+                
                 // If nothing playing, play first
                 if (currentPlaylistIndex === -1) {
                     playPlaylistItem(0);
@@ -1381,26 +1375,26 @@
             playlist.forEach((item, index) => {
                 const el = document.createElement('div');
                 el.className = `flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors text-sm group ${index === currentPlaylistIndex ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-secondary'}`;
-
+                
                 // Securely create elements
                 const iconDiv = document.createElement('div');
                 iconDiv.className = 'shrink-0';
-                iconDiv.innerHTML = index === currentPlaylistIndex
-                    ? '<i data-lucide="play" class="h-4 w-4 fill-current"></i>'
+                iconDiv.innerHTML = index === currentPlaylistIndex 
+                    ? '<i data-lucide="play" class="h-4 w-4 fill-current"></i>' 
                     : `<span class="text-muted-foreground text-xs w-4 inline-block text-center">${index + 1}</span>`;
-
+                
                 const nameDiv = document.createElement('div');
                 nameDiv.className = 'min-w-0 flex-1';
                 const nameP = document.createElement('p');
                 nameP.className = 'truncate';
                 nameP.textContent = item.name; // Secure Text Content
                 nameDiv.appendChild(nameP);
-
+                
                 const delBtn = document.createElement('button');
                 delBtn.className = 'opacity-0 group-hover:opacity-100 hover:text-destructive p-1';
                 delBtn.innerHTML = '<i data-lucide="x" class="h-3 w-3"></i>';
                 delBtn.onclick = (e) => window.removeFromPlaylist(e, index);
-
+                
                 el.appendChild(iconDiv);
                 el.appendChild(nameDiv);
                 el.appendChild(delBtn);
@@ -1427,7 +1421,7 @@
             e.stopPropagation();
             URL.revokeObjectURL(playlist[index].url);
             playlist.splice(index, 1);
-
+            
             if (index === currentPlaylistIndex) {
                 currentPlaylistIndex = -1; // Current playing removed
             } else if (index < currentPlaylistIndex) {
@@ -1442,7 +1436,7 @@
 
             if (playbackMode === 'loop-one') {
                 // Handled natively by video.loop = true, but strictly ensuring:
-                videoPlayer.play();
+                videoPlayer.play(); 
             } else if (playbackMode === 'loop-all') {
                 const nextIndex = (currentPlaylistIndex + 1) % playlist.length;
                 playPlaylistItem(nextIndex);
@@ -1584,11 +1578,11 @@
                     audioSource = audioCtx.createMediaElementSource(videoPlayer);
                     audioSource.connect(analyser);
                     analyser.connect(audioCtx.destination);
-
+                    
                     analyser.fftSize = 256;
                     bufferLength = analyser.frequencyBinCount;
                     dataArray = new Uint8Array(bufferLength);
-
+                    
                     canvas.width = canvas.offsetWidth;
                     canvas.height = canvas.offsetHeight;
                 } catch (e) {
@@ -1596,13 +1590,13 @@
                     return;
                 }
             }
-
+            
             // Restart loop if not running
             if (!isVisualizerRunning && !videoPlayer.paused) {
                 drawVisualizer();
             }
         }
-
+        
         // Handle Resize for Canvas
         window.addEventListener('resize', () => {
              if(canvas) {
@@ -1618,7 +1612,7 @@
             const s = videoSaturationInput.value;
 
             videoPlayer.style.filter = `brightness(${b}%) contrast(${c}%) saturate(${s}%)`;
-
+            
             valBrightness.textContent = b + '%';
             valContrast.textContent = c + '%';
             valSaturation.textContent = s + '%';
@@ -1633,7 +1627,7 @@
             if (confirm('Are you sure you want to reset all settings?')) {
                 localStorage.removeItem(SUB_SETTINGS_KEY);
                 loadSubtitleSettings(); // Reloads defaults
-
+                
                 // Reset Video Filters
                 videoBrightnessInput.value = 100;
                 videoContrastInput.value = 100;
