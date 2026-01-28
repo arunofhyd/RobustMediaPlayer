@@ -442,6 +442,9 @@
                         <button id="loopToggle" class="p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-white/20 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Playback Mode" title="Mode: Normal">
                             <i data-lucide="arrow-right-circle" class="h-5 w-5 sm:h-6 sm:w-6"></i>
                         </button>
+                        <button id="fullscreenToggle" class="p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-white/20 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Toggle Fullscreen" title="Fullscreen">
+                            <i data-lucide="maximize" class="h-5 w-5 sm:h-6 sm:w-6"></i>
+                        </button>
                     </div>
 
                     <!-- Feedback Indicator -->
@@ -561,6 +564,7 @@
         const settingsToggle = document.getElementById('settingsToggle');
         const settingsPanel = document.getElementById('settingsPanel');
         const pipToggle = document.getElementById('pipToggle');
+        const fullscreenToggle = document.getElementById('fullscreenToggle');
         const screenshotBtn = document.getElementById('screenshotBtn');
         const resetSettingsBtn = document.getElementById('resetSettingsBtn');
 
@@ -626,6 +630,9 @@
         // Playlist State
         let playlist = [];
         let currentPlaylistIndex = -1;
+
+        // PiP State
+        let pipVideo = null;
 
         // --- Theme Toggle Logic ---
         function setTheme(theme) {
@@ -881,14 +888,96 @@
                  try {
                      if (document.pictureInPictureElement) {
                          await document.exitPictureInPicture();
+                         return;
+                     }
+
+                     if (isAudioFile) {
+                         // Audio Visualizer PiP Logic
+                         if (!pipVideo) {
+                             pipVideo = document.createElement('video');
+                             // Invisible but rendered element for PiP support
+                             pipVideo.style.position = 'fixed';
+                             pipVideo.style.top = '0';
+                             pipVideo.style.left = '0';
+                             pipVideo.style.width = '1px';
+                             pipVideo.style.height = '1px';
+                             pipVideo.style.opacity = '0';
+                             pipVideo.style.pointerEvents = 'none';
+                             pipVideo.style.zIndex = '-50';
+                             pipVideo.muted = true;
+                             pipVideo.playsInline = true;
+                             document.body.appendChild(pipVideo);
+
+                             // Sync Logic (PiP -> Main)
+                             pipVideo.addEventListener('play', () => {
+                                 if (videoPlayer.paused) videoPlayer.play();
+                             });
+                             pipVideo.addEventListener('pause', () => {
+                                 if (!videoPlayer.paused && document.pictureInPictureElement === pipVideo) {
+                                     videoPlayer.pause();
+                                 }
+                             });
+
+                             // Sync Logic (Main -> PiP)
+                             videoPlayer.addEventListener('play', () => {
+                                 if (document.pictureInPictureElement === pipVideo && pipVideo.paused) pipVideo.play();
+                             });
+                             videoPlayer.addEventListener('pause', () => {
+                                 if (document.pictureInPictureElement === pipVideo && !pipVideo.paused) pipVideo.pause();
+                             });
+
+                             pipVideo.addEventListener('leavepictureinpicture', () => {
+                                 pipVideo.pause();
+                                 // Stop tracks to save resources
+                                 if (pipVideo.srcObject) {
+                                     pipVideo.srcObject.getTracks().forEach(track => track.stop());
+                                     pipVideo.srcObject = null;
+                                 }
+                             });
+                         }
+
+                         // Capture Stream from Canvas (30 FPS)
+                         const stream = canvas.captureStream(30);
+                         pipVideo.srcObject = stream;
+                         await pipVideo.play();
+                         await pipVideo.requestPictureInPicture();
+
+                         // Sync initial state
+                         if (videoPlayer.paused) pipVideo.pause();
+
                      } else {
+                         // Standard Video PiP
                          await videoPlayer.requestPictureInPicture();
                      }
                  } catch (err) {
                      console.error('PiP Error:', err);
+                     showTemporaryAlert('PiP failed: ' + err.message, 'error');
                  }
              });
         }
+
+        // Fullscreen Logic
+        fullscreenToggle.addEventListener('click', () => {
+            const container = videoPlayer.parentElement;
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(err => {
+                    showTemporaryAlert(`Error attempting to enable fullscreen: ${err.message} (${err.name})`, 'error');
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                fullscreenToggle.innerHTML = '<i data-lucide="minimize" class="h-5 w-5 sm:h-6 sm:w-6"></i>';
+                fullscreenToggle.title = "Exit Fullscreen";
+            } else {
+                fullscreenToggle.innerHTML = '<i data-lucide="maximize" class="h-5 w-5 sm:h-6 sm:w-6"></i>';
+                fullscreenToggle.title = "Fullscreen";
+            }
+            lucide.createIcons({ root: fullscreenToggle });
+        });
 
         // Screenshot Logic
         screenshotBtn.addEventListener('click', () => {
