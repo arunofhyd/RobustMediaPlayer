@@ -1059,8 +1059,8 @@
                 canvas.classList.remove('hidden');
                 canvas.classList.add('opacity-100');
                 canvas.classList.remove('opacity-90');
-                // Set a poster or placeholder for audio if needed
-                videoPlayer.poster = 'assets/logo.png'; // Or some music icon
+                // Removed logo poster to show visualizer clearly on black background
+                videoPlayer.poster = ''; 
             } else {
                 canvas.classList.add('hidden');
                 isVisualizerRunning = false;
@@ -1657,6 +1657,11 @@
                     console.warn("Audio Context init failed:", e);
                     return;
                 }
+            }
+
+            // Resume context if suspended (Autoplay Policy)
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
             }
             
             // Restart loop if not running
