@@ -432,10 +432,7 @@
                     </div>
 
                     <!-- Overlay Controls (Top Right) -->
-                    <div id="overlayControls" class="absolute top-3 right-3 sm:top-4 sm:right-4 z-40 flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                         <button id="visualizerBtn" class="hidden p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-white/20 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Change Visualizer Style" title="Change Visualizer Style">
-                            <i data-lucide="wand-2" class="h-5 w-5 sm:h-6 sm:w-6"></i>
-                        </button>
+                    <div id="overlayControls" class="absolute top-3 right-3 sm:top-4 sm:right-4 z-[60] flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                          <button id="screenshotBtn" class="p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-white/20 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Take Screenshot" title="Take Screenshot">
                             <i data-lucide="camera" class="h-5 w-5 sm:h-6 sm:w-6"></i>
                         </button>
@@ -565,7 +562,6 @@
         const settingsPanel = document.getElementById('settingsPanel');
         const pipToggle = document.getElementById('pipToggle');
         const screenshotBtn = document.getElementById('screenshotBtn');
-        const visualizerBtn = document.getElementById('visualizerBtn');
         const resetSettingsBtn = document.getElementById('resetSettingsBtn');
 
         // Help Modal Elements
@@ -623,6 +619,8 @@
         let isVisualizerRunning = false;
         let visualizerStyle = 'bars';
         let visualizerHue = 217; // Default Blue
+        let visualizerSaturation = 80;
+        let visualizerLightness = 60;
         let isAudioFile = false;
 
         // Playlist State
@@ -1065,6 +1063,7 @@
                 canvas.classList.remove('opacity-90');
                 // Removed logo poster to show visualizer clearly on black background
                 videoPlayer.poster = ''; 
+                randomizeVisualizer();
             } else {
                 canvas.classList.add('hidden');
                 isVisualizerRunning = false;
@@ -1476,41 +1475,48 @@
 
         // --- Keyboard Shortcuts & Feedback ---
         function showFeedback(iconName) {
-            if (feedbackTimeout) clearTimeout(feedbackTimeout);
+            try {
+                if (feedbackTimeout) clearTimeout(feedbackTimeout);
 
-            // Map FA icons to Lucide
-            const iconMap = {
-                'fa-play': 'play',
-                'fa-pause': 'pause',
-                'fa-backward': 'rewind',
-                'fa-forward': 'fast-forward',
-                'fa-volume-up': 'volume-2',
-                'fa-volume-down': 'volume-1',
-                'fa-volume-mute': 'volume-x'
-            };
+                // Map FA icons to Lucide
+                const iconMap = {
+                    'fa-play': 'play',
+                    'fa-pause': 'pause',
+                    'fa-backward': 'rewind',
+                    'fa-forward': 'fast-forward',
+                    'fa-volume-up': 'volume-2',
+                    'fa-volume-down': 'volume-1',
+                    'fa-volume-mute': 'volume-x'
+                };
 
-            const lucideName = iconMap[iconName] || 'activity';
+                const lucideName = iconMap[iconName] || 'activity';
 
-            // Manually render SVG for performance/simplicity in this context
-            // We use lucide.icons[Name].toSvg()
-            // Convert kebab-case to PascalCase for the key
-            const camelName = lucideName.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
-            // Special cases
-            let lucideKey = camelName;
-            if (lucideName === 'volume-2') lucideKey = 'Volume2';
-            if (lucideName === 'volume-1') lucideKey = 'Volume1';
-            if (lucideName === 'volume-x') lucideKey = 'VolumeX';
-            if (lucideName === 'fast-forward') lucideKey = 'FastForward';
+                // Manually render SVG for performance/simplicity in this context
+                // We use lucide.icons[Name].toSvg()
+                // Convert kebab-case to PascalCase for the key
+                const camelName = lucideName.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
+                // Special cases
+                let lucideKey = camelName;
+                if (lucideName === 'volume-2') lucideKey = 'Volume2';
+                if (lucideName === 'volume-1') lucideKey = 'Volume1';
+                if (lucideName === 'volume-x') lucideKey = 'VolumeX';
+                if (lucideName === 'fast-forward') lucideKey = 'FastForward';
 
-            // Fallback
-            if (!lucide.icons[lucideKey]) lucideKey = 'Play';
+                // Fallback
+                if (!lucide.icons[lucideKey]) lucideKey = 'Play';
 
-            indicatorIconWrapper.innerHTML = lucide.icons[lucideKey].toSvg({ class: "h-10 w-10 text-foreground" });
-            feedbackIndicator.style.opacity = '1';
+                // Safe check for API
+                if (lucide.icons[lucideKey] && typeof lucide.icons[lucideKey].toSvg === 'function') {
+                    indicatorIconWrapper.innerHTML = lucide.icons[lucideKey].toSvg({ class: "h-10 w-10 text-foreground" });
+                    feedbackIndicator.style.opacity = '1';
 
-            feedbackTimeout = setTimeout(() => {
-                feedbackIndicator.style.opacity = '0';
-            }, 800);
+                    feedbackTimeout = setTimeout(() => {
+                        feedbackIndicator.style.opacity = '0';
+                    }, 800);
+                }
+            } catch (err) {
+                console.warn('Feedback Error:', err);
+            }
         }
 
         function handleKeydown(e) {
@@ -1557,8 +1563,8 @@
 
         document.addEventListener('keydown', handleKeydown);
         videoPlayer.addEventListener('play', () => {
-            showFeedback('fa-play');
             initAudioVisualizer();
+            showFeedback('fa-play');
         });
         videoPlayer.addEventListener('pause', () => showFeedback('fa-pause'));
 
@@ -1570,75 +1576,10 @@
             const styles = ['bars', 'mirror', 'wave'];
             visualizerStyle = styles[Math.floor(Math.random() * styles.length)];
             visualizerHue = Math.floor(Math.random() * 360);
-            console.log(`Visualizer Mode: ${visualizerStyle}, Hue: ${visualizerHue}`);
-            showTemporaryAlert(`Visualizer: ${visualizerStyle.charAt(0).toUpperCase() + visualizerStyle.slice(1)}`, 'info');
+            visualizerSaturation = Math.floor(Math.random() * 40) + 60; // 60-100%
+            visualizerLightness = Math.floor(Math.random() * 30) + 40; // 40-70%
+            console.log(`Visualizer Mode: ${visualizerStyle}, Hue: ${visualizerHue}, Sat: ${visualizerSaturation}%, Light: ${visualizerLightness}%`);
         }
-
-        visualizerBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent drag/drop interference
-            randomizeVisualizer();
-            // Force single frame if paused to update look
-            if (videoPlayer.paused) {
-                // Ensure context is running if possible
-                if (analyser && dataArray) {
-                    canvasCtx.clearRect(0, 0, canvas.width, canvas.height); // Clear first
-                    // We need to call the drawing logic once.
-                    // drawVisualizer loops, so we can't just call it or it will start loop if paused?
-                    // Actually drawVisualizer has a guard: if (videoPlayer.paused) ... return;
-                    // We should bypass that for a single frame or just force it.
-                    // Let's refactor drawVisualizer to separate the "render frame" from the "loop".
-
-                    // Simple hack: Temporarily bypass the paused check for one call?
-                    // Or just duplicate the render logic? Refactoring is better but risky for regression.
-                    // Let's copy the render logic for the manual trigger:
-
-                    if (visualizerStyle === 'wave') {
-                        analyser.getByteTimeDomainData(dataArray);
-                    } else {
-                        analyser.getByteFrequencyData(dataArray);
-                    }
-                    const width = canvas.width;
-                    const height = canvas.height;
-
-                    if (visualizerStyle === 'bars') {
-                        const barWidth = (width / bufferLength) * 2.5;
-                        let barHeight;
-                        let x = 0;
-                        for(let i = 0; i < bufferLength; i++) {
-                            barHeight = (dataArray[i] / 255) * height;
-                            canvasCtx.fillStyle = `hsla(${visualizerHue}, 80%, 60%, ${(barHeight/height) + 0.2})`;
-                            canvasCtx.fillRect(x, height - barHeight, barWidth, barHeight);
-                            x += barWidth + 1;
-                        }
-                    } else if (visualizerStyle === 'mirror') {
-                        const barWidth = (width / bufferLength) * 2;
-                        let barHeight;
-                        let x = width / 2;
-                        for(let i = 0; i < bufferLength; i++) {
-                            barHeight = (dataArray[i] / 255) * (height / 1.5);
-                            canvasCtx.fillStyle = `hsla(${visualizerHue}, 70%, 50%, ${(barHeight/height) + 0.3})`;
-                            canvasCtx.fillRect(width/2 + (i * barWidth), (height - barHeight)/2, barWidth, barHeight);
-                            canvasCtx.fillRect(width/2 - (i * barWidth) - barWidth, (height - barHeight)/2, barWidth, barHeight);
-                        }
-                    } else if (visualizerStyle === 'wave') {
-                        canvasCtx.lineWidth = 2;
-                        canvasCtx.strokeStyle = `hsla(${visualizerHue}, 100%, 70%, 0.8)`;
-                        canvasCtx.beginPath();
-                        const sliceWidth = width * 1.0 / bufferLength;
-                        let x = 0;
-                        for(let i = 0; i < bufferLength; i++) {
-                            const v = dataArray[i] / 128.0;
-                            const y = v * height / 2;
-                            if(i === 0) canvasCtx.moveTo(x, y);
-                            else canvasCtx.lineTo(x, y);
-                            x += sliceWidth;
-                        }
-                        canvasCtx.lineTo(canvas.width, canvas.height/2);
-                        canvasCtx.stroke();
-                    }
-                }
-            }
-        });
 
         function drawVisualizer() {
             if (videoPlayer.paused || videoPlayer.ended) {
@@ -1666,7 +1607,7 @@
                     let x = 0;
                     for(let i = 0; i < bufferLength; i++) {
                         barHeight = (dataArray[i] / 255) * height;
-                        canvasCtx.fillStyle = `hsla(${visualizerHue}, 80%, 60%, ${(barHeight/height) + 0.2})`;
+                        canvasCtx.fillStyle = `hsla(${visualizerHue}, ${visualizerSaturation}%, ${visualizerLightness}%, ${(barHeight/height) + 0.2})`;
                         canvasCtx.fillRect(x, height - barHeight, barWidth, barHeight);
                         x += barWidth + 1;
                     }
@@ -1676,7 +1617,7 @@
                     let x = width / 2; // Start center
                     for(let i = 0; i < bufferLength; i++) {
                         barHeight = (dataArray[i] / 255) * (height / 1.5);
-                        canvasCtx.fillStyle = `hsla(${visualizerHue}, 70%, 50%, ${(barHeight/height) + 0.3})`;
+                        canvasCtx.fillStyle = `hsla(${visualizerHue}, ${visualizerSaturation}%, ${visualizerLightness}%, ${(barHeight/height) + 0.3})`;
                         
                         // Right side
                         canvasCtx.fillRect(width/2 + (i * barWidth), (height - barHeight)/2, barWidth, barHeight);
@@ -1685,7 +1626,7 @@
                     }
                 } else if (visualizerStyle === 'wave') {
                     canvasCtx.lineWidth = 2;
-                    canvasCtx.strokeStyle = `hsla(${visualizerHue}, 100%, 70%, 0.8)`;
+                    canvasCtx.strokeStyle = `hsla(${visualizerHue}, ${visualizerSaturation}%, ${visualizerLightness}%, 0.8)`;
                     canvasCtx.beginPath();
                     const sliceWidth = width * 1.0 / bufferLength;
                     let x = 0;
@@ -1705,9 +1646,6 @@
         function initAudioVisualizer() {
             // Only run if audio file
             if (!isAudioFile) return;
-
-            // Randomize on new init or resume
-            if (!isVisualizerRunning) randomizeVisualizer();
 
             if (!audioCtx) {
                 try {
