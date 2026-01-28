@@ -418,7 +418,7 @@
                 <div class="relative w-full aspect-video rounded-lg overflow-hidden border bg-black shadow-lg group">
 
                     <!-- Audio Visualizer Canvas -->
-                    <canvas id="audioVisualizer" class="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-50"></canvas>
+                    <canvas id="audioVisualizer" class="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-90"></canvas>
 
                     <!-- Subtitle Demo -->
                     <div id="subtitleDemo" class="absolute z-50 bottom-8 left-1/2 transform -translate-x-1/2 pointer-events-none transition-opacity duration-300 hidden">
@@ -1212,6 +1212,9 @@
         });
 
         videoPlayer.addEventListener('loadedmetadata', () => {
+             // Reset visualizer state on new media
+             isVisualizerRunning = false;
+
              if (currentMediaId) {
                  const savedTime = localStorage.getItem('resume_' + currentMediaId);
                  if (savedTime && parseFloat(savedTime) > 5) {
