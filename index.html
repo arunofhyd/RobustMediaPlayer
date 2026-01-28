@@ -367,9 +367,14 @@
                             </div>
                         </div>
 
-                        <div class="pt-4 border-t">
-                            <label for="subOffset" class="text-xs font-medium text-muted-foreground block mb-2">Subtitle Offset: <span id="currentSubOffset">0.0</span>s</label>
-                            <input type="range" id="subOffset" min="-10" max="10" value="0.0" step="0.1" class="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer">
+                        <div class="pt-4 border-t space-y-4">
+                            <div>
+                                <label for="subOffset" class="text-xs font-medium text-muted-foreground block mb-2">Subtitle Offset: <span id="currentSubOffset">0.0</span>s</label>
+                                <input type="range" id="subOffset" min="-10" max="10" value="0.0" step="0.1" class="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div class="w-full flex justify-center">
+                                <button id="resetSettingsBtn" class="text-xs text-red-500 hover:text-red-600 font-medium underline">Reset to Defaults</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -377,6 +382,9 @@
 
                 <!-- Media Player Container -->
                 <div class="relative w-full aspect-video rounded-lg overflow-hidden border bg-black shadow-lg group">
+
+                    <!-- Audio Visualizer Canvas -->
+                    <canvas id="audioVisualizer" class="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-50"></canvas>
 
                     <!-- Subtitle Demo -->
                     <div id="subtitleDemo" class="absolute z-50 bottom-8 left-1/2 transform -translate-x-1/2 pointer-events-none transition-opacity duration-300 hidden">
@@ -415,12 +423,54 @@
             </div>
         </div>
 
-        <footer class="text-center pb-8">
-            <a href="mailto:arunthomas04042001@gmail.com" class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                <i data-lucide="mail" class="h-4 w-4"></i>
-                <span>Contact Developer</span>
-            </a>
+        <footer class="text-center pb-8 flex flex-col items-center gap-4">
+            <div class="flex items-center gap-4">
+                <button id="helpBtn" class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+                    <i data-lucide="keyboard" class="h-4 w-4"></i>
+                    <span>Shortcuts</span>
+                </button>
+                <span class="text-muted-foreground/30">|</span>
+                <a href="mailto:arunthomas04042001@gmail.com" class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+                    <i data-lucide="mail" class="h-4 w-4"></i>
+                    <span>Contact Developer</span>
+                </a>
+            </div>
         </footer>
+
+        <!-- Help Modal -->
+        <div id="helpModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-in fade-in">
+             <div class="w-full max-w-md rounded-xl border bg-card p-6 shadow-lg relative">
+                 <button id="closeHelpBtn" class="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+                     <i data-lucide="x" class="h-5 w-5"></i>
+                 </button>
+                 <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                     <i data-lucide="keyboard" class="h-5 w-5"></i>
+                     Keyboard Shortcuts
+                 </h3>
+                 <div class="space-y-3">
+                     <div class="flex justify-between text-sm">
+                         <span class="text-muted-foreground">Play / Pause</span>
+                         <span class="font-mono bg-secondary px-2 py-0.5 rounded text-xs">Space</span>
+                     </div>
+                     <div class="flex justify-between text-sm">
+                         <span class="text-muted-foreground">Seek Forward / Backward</span>
+                         <span class="font-mono bg-secondary px-2 py-0.5 rounded text-xs">← / →</span>
+                     </div>
+                     <div class="flex justify-between text-sm">
+                         <span class="text-muted-foreground">Volume Up / Down</span>
+                         <span class="font-mono bg-secondary px-2 py-0.5 rounded text-xs">↑ / ↓</span>
+                     </div>
+                     <div class="flex justify-between text-sm">
+                         <span class="text-muted-foreground">Mute</span>
+                         <span class="font-mono bg-secondary px-2 py-0.5 rounded text-xs">M</span>
+                     </div>
+                     <div class="flex justify-between text-sm">
+                         <span class="text-muted-foreground">Fullscreen</span>
+                         <span class="font-mono bg-secondary px-2 py-0.5 rounded text-xs">F</span>
+                     </div>
+                 </div>
+             </div>
+        </div>
 
     </div>
 
@@ -450,6 +500,16 @@
         const settingsToggle = document.getElementById('settingsToggle');
         const settingsPanel = document.getElementById('settingsPanel');
         const pipToggle = document.getElementById('pipToggle');
+        const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+
+        // Help Modal Elements
+        const helpBtn = document.getElementById('helpBtn');
+        const helpModal = document.getElementById('helpModal');
+        const closeHelpBtn = document.getElementById('closeHelpBtn');
+
+        // Audio Visualizer Elements
+        const canvas = document.getElementById('audioVisualizer');
+        const canvasCtx = canvas.getContext('2d');
 
         // Demo elements
         const subtitleDemo = document.getElementById('subtitleDemo');
@@ -473,6 +533,12 @@
         let activeTrack = null;
         let isLooping = false;
         const SUB_SETTINGS_KEY = 'subtitleSettings';
+
+        // Audio Context State
+        let audioCtx;
+        let audioSource;
+        let analyser;
+        let isVisualizerRunning = false;
 
         // --- Theme Toggle Logic ---
         function setTheme(theme) {
@@ -826,6 +892,9 @@
                 videoPlayer.load();
                 videoPlayer.poster = '';
                 showTemporaryAlert('Media loaded successfully.', 'success');
+                
+                // Initialize Visualizer if it's an audio file (or has audio)
+                // We'll init it on first user interaction (play) to respect autoplay policies
             } else if (isYouTube) {
                 // Special handling for YouTube
                 if (currentVideoBlobUrl) URL.revokeObjectURL(currentVideoBlobUrl);
@@ -1064,8 +1133,107 @@
         }
 
         document.addEventListener('keydown', handleKeydown);
-        videoPlayer.addEventListener('play', () => showFeedback('fa-play'));
+        videoPlayer.addEventListener('play', () => {
+            showFeedback('fa-play');
+            initAudioVisualizer();
+        });
         videoPlayer.addEventListener('pause', () => showFeedback('fa-pause'));
+
+        // --- Audio Visualizer Logic ---
+        function initAudioVisualizer() {
+            if (audioCtx) return; // Already initialized
+
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+                analyser = audioCtx.createAnalyser();
+                audioSource = audioCtx.createMediaElementSource(videoPlayer);
+                audioSource.connect(analyser);
+                analyser.connect(audioCtx.destination);
+                
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+                
+                function draw() {
+                    if (videoPlayer.paused || videoPlayer.ended) {
+                        isVisualizerRunning = false;
+                        canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+                        return; 
+                    }
+                    requestAnimationFrame(draw);
+                    isVisualizerRunning = true;
+
+                    analyser.getByteFrequencyData(dataArray);
+
+                    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+                    const barWidth = (canvas.width / bufferLength) * 2.5;
+                    let barHeight;
+                    let x = 0;
+
+                    for(let i = 0; i < bufferLength; i++) {
+                        barHeight = dataArray[i] / 2; // Scale down
+                        
+                        // Use CSS variables for color if possible, else fallback
+                        // Simple gradient based on height
+                        canvasCtx.fillStyle = `rgba(59, 130, 246, ${barHeight / 200})`; // Primary Blue
+                        canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+
+                        x += barWidth + 1;
+                    }
+                }
+                
+                draw();
+            } catch (e) {
+                console.warn("Audio Context init failed (likely due to autoplay policy or CORS):", e);
+            }
+        }
+        
+        // Handle Resize for Canvas
+        window.addEventListener('resize', () => {
+             if(canvas) {
+                 canvas.width = canvas.offsetWidth;
+                 canvas.height = canvas.offsetHeight;
+             }
+        });
+
+        // --- Reset Settings Logic ---
+        resetSettingsBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to reset all settings?')) {
+                localStorage.removeItem(SUB_SETTINGS_KEY);
+                loadSubtitleSettings(); // Reloads defaults
+                showTemporaryAlert('Settings reset to defaults.', 'success');
+            }
+        });
+
+        // --- Help Modal Logic ---
+        function toggleHelpModal() {
+            const isHidden = helpModal.classList.contains('hidden');
+            if (isHidden) {
+                helpModal.classList.remove('hidden');
+                helpModal.classList.add('flex');
+            } else {
+                helpModal.classList.add('hidden');
+                helpModal.classList.remove('flex');
+            }
+        }
+
+        helpBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleHelpModal();
+        });
+
+        closeHelpBtn.addEventListener('click', toggleHelpModal);
+
+        // Close modal when clicking outside
+        helpModal.addEventListener('click', (e) => {
+            if (e.target === helpModal) {
+                toggleHelpModal();
+            }
+        });
 
         loadSubtitleSettings();
         setPlayerMode('video');
