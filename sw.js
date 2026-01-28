@@ -3,7 +3,10 @@ const ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/assets/logo.png'
+  '/assets/logo.png',
+  'https://cdn.tailwindcss.com',
+  'https://cdn.jsdelivr.net/npm/hls.js@latest',
+  'https://unpkg.com/lucide@latest'
 ];
 
 self.addEventListener('install', (event) => {

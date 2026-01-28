@@ -291,13 +291,13 @@
                     <!-- Local Media File -->
                     <div class="relative group cursor-pointer">
                          <div class="absolute inset-0 rounded-xl border-2 border-dashed border-muted-foreground/25 group-hover:border-primary/50 transition-colors pointer-events-none"></div>
-                         <div class="flex flex-col items-center justify-center py-6 text-center space-y-2">
-                             <div class="p-2 rounded-full bg-secondary text-secondary-foreground group-hover:bg-primary/10 transition-colors">
+                         <div class="flex flex-row items-center justify-center md:justify-start px-6 py-4 text-left gap-4 h-full">
+                             <div class="p-2 rounded-full bg-secondary text-secondary-foreground group-hover:bg-primary/10 transition-colors shrink-0">
                                  <i data-lucide="file-video" class="h-6 w-6"></i>
                              </div>
-                             <div class="space-y-1">
-                                 <p class="text-sm font-medium">Load Media</p>
-                                 <p class="text-[10px] text-muted-foreground">Video (.mp4, .mkv) & Audio (.mp3)</p>
+                             <div class="space-y-1 min-w-0">
+                                 <p class="text-sm font-medium truncate">Load Media</p>
+                                 <p class="text-[10px] text-muted-foreground truncate">Video (.mp4, .mkv) & Audio (.mp3)</p>
                              </div>
                          </div>
                          <input type="file" id="videoFile" accept="video/*,audio/*,.ts" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
@@ -308,20 +308,20 @@
                          <!-- Subtitle File -->
                          <div class="relative group cursor-pointer flex-grow">
                             <div class="absolute inset-0 rounded-xl border-2 border-dashed border-muted-foreground/25 group-hover:border-primary/50 transition-colors pointer-events-none"></div>
-                            <div class="flex flex-col items-center justify-center py-6 text-center space-y-2 h-full">
-                                <div class="p-2 rounded-full bg-secondary text-secondary-foreground group-hover:bg-primary/10 transition-colors">
+                            <div class="flex flex-row items-center justify-center md:justify-start px-6 py-4 text-left gap-4 h-full">
+                                <div class="p-2 rounded-full bg-secondary text-secondary-foreground group-hover:bg-primary/10 transition-colors shrink-0">
                                     <i data-lucide="file-type" class="h-6 w-6"></i>
                                 </div>
-                                <div class="space-y-1">
-                                    <p class="text-sm font-medium">Load Subtitles</p>
-                                    <p class="text-[10px] text-muted-foreground">.vtt, .srt</p>
+                                <div class="space-y-1 min-w-0">
+                                    <p class="text-sm font-medium truncate">Load Subtitles</p>
+                                    <p class="text-[10px] text-muted-foreground truncate">.vtt, .srt</p>
                                 </div>
                             </div>
                             <input type="file" id="subtitleFile" accept=".vtt,.srt" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                        </div>
 
                        <!-- Settings Toggle -->
-                       <button id="subSettingsToggle"
+                       <button id="settingsToggle"
                                class="inline-flex items-center justify-center rounded-xl border border-input bg-background hover:bg-accent hover:text-accent-foreground h-full w-14 transition-colors"
                                aria-label="Toggle Settings">
                            <i data-lucide="settings-2" class="h-6 w-6 transition-transform duration-300"></i>
@@ -331,16 +331,19 @@
                 </div>
 
                 <!-- Settings Panel -->
-                <div id="subSettingsPanel" class="hidden rounded-lg border bg-card text-card-foreground shadow-sm animate-in fade-in"
+                <div id="settingsPanel" class="hidden rounded-lg border bg-card text-card-foreground shadow-sm animate-in fade-in"
                      role="region">
-                    <div class="p-6 space-y-4">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-semibold">Subtitle Settings</h3>
-                        </div>
+                    <div class="p-6 space-y-6">
 
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                             <div class="space-y-2">
-                                 <label for="subFontColor" class="text-xs font-medium text-muted-foreground">Font Color</label>
+                        <!-- Subtitle Settings -->
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-widest">Subtitles</h4>
+                            </div>
+
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                 <div class="space-y-2">
+                                     <label for="subFontColor" class="text-xs font-medium text-muted-foreground">Font Color</label>
                                  <div class="flex items-center gap-2">
                                      <input type="color" id="subFontColor" value="#ffffff" class="h-9 w-full rounded-md border border-input cursor-pointer p-1 bg-background">
                                  </div>
@@ -370,6 +373,7 @@
                         </div>
                     </div>
                 </div>
+                </div>
 
                 <!-- Media Player Container -->
                 <div class="relative w-full aspect-video rounded-lg overflow-hidden border bg-black shadow-lg group">
@@ -385,10 +389,15 @@
                          <p class="text-2xl font-bold text-foreground">Drop File Here</p>
                     </div>
 
-                    <!-- Loop Overlay Button -->
-                    <button id="loopToggle" class="absolute top-3 right-3 sm:top-4 sm:right-4 z-40 p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-all shadow-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:opacity-100 focus:opacity-100 focus:outline-none" aria-label="Toggle Loop" title="Toggle Loop">
-                        <i data-lucide="repeat" class="h-5 w-5 sm:h-6 sm:w-6"></i>
-                    </button>
+                    <!-- Overlay Controls (Top Right) -->
+                    <div class="absolute top-3 right-3 sm:top-4 sm:right-4 z-40 flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                         <button id="pipToggle" class="hidden p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Toggle Picture-in-Picture" title="Picture-in-Picture">
+                            <i data-lucide="picture-in-picture-2" class="h-5 w-5 sm:h-6 sm:w-6"></i>
+                        </button>
+                        <button id="loopToggle" class="p-2 sm:p-2.5 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-all shadow-md hover:scale-105 focus:scale-105 focus:outline-none" aria-label="Toggle Loop" title="Toggle Loop">
+                            <i data-lucide="repeat" class="h-5 w-5 sm:h-6 sm:w-6"></i>
+                        </button>
+                    </div>
 
                     <!-- Feedback Indicator -->
                     <div id="feedbackIndicator" class="absolute inset-0 flex items-center justify-center pointer-events-none z-30 opacity-0 transition-opacity duration-300">
@@ -437,9 +446,10 @@
 
         const subtitleStyleSheet = document.getElementById('subtitle-style');
 
-        // Subtitle customization DOM elements
-        const subSettingsToggle = document.getElementById('subSettingsToggle');
-        const subSettingsPanel = document.getElementById('subSettingsPanel');
+        // Settings DOM elements
+        const settingsToggle = document.getElementById('settingsToggle');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const pipToggle = document.getElementById('pipToggle');
 
         // Demo elements
         const subtitleDemo = document.getElementById('subtitleDemo');
@@ -457,6 +467,7 @@
         // --- State Management ---
         let feedbackTimeout;
         let currentVideoBlobUrl = null;
+        let currentMediaId = null; // For resume functionality
         let hls;
         let originalCues = [];
         let activeTrack = null;
@@ -627,25 +638,48 @@
             input.addEventListener(eventType, applySubtitleStyles);
         });
 
-        function toggleSubSettings() {
-            const isHidden = subSettingsPanel.classList.toggle('hidden');
-            const gearIcon = subSettingsToggle.querySelector('svg');
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function toggleSettings() {
+            const isHidden = settingsPanel.classList.toggle('hidden');
 
             // Re-render icon with rotation
             if (isHidden) {
                 // Not rotated
-                 subSettingsToggle.innerHTML = '<i data-lucide="settings-2" class="h-6 w-6 transition-transform duration-300"></i>';
+                 settingsToggle.innerHTML = '<i data-lucide="settings-2" class="h-6 w-6 transition-transform duration-300"></i>';
             } else {
                 // Rotated
-                 subSettingsToggle.innerHTML = '<i data-lucide="settings-2" class="h-6 w-6 transition-transform duration-300 rotate-180"></i>';
+                 settingsToggle.innerHTML = '<i data-lucide="settings-2" class="h-6 w-6 transition-transform duration-300 rotate-180"></i>';
             }
             lucide.createIcons();
 
             subtitleDemo.classList.toggle('hidden', isHidden);
-            subSettingsToggle.setAttribute('aria-expanded', !isHidden);
+            settingsToggle.setAttribute('aria-expanded', !isHidden);
         }
 
-        subSettingsToggle.addEventListener('click', toggleSubSettings);
+        settingsToggle.addEventListener('click', toggleSettings);
+
+        // Picture-in-Picture
+        if (document.pictureInPictureEnabled && pipToggle) {
+             pipToggle.classList.remove('hidden');
+             pipToggle.addEventListener('click', async () => {
+                 try {
+                     if (document.pictureInPictureElement) {
+                         await document.exitPictureInPicture();
+                     } else {
+                         await videoPlayer.requestPictureInPicture();
+                     }
+                 } catch (err) {
+                     console.error('PiP Error:', err);
+                 }
+             });
+        }
 
 
         // --- Helper Functions ---
@@ -748,7 +782,15 @@
                 videoPlayer.poster = 'https://placehold.co/800x450/09090b/e4e4e7?text=No+Media+Loaded';
                 showTemporaryAlert('Media source cleared.', 'info');
                 videoPlayer.load();
+                currentMediaId = null;
                 return;
+            }
+
+            // Generate ID for Resume
+            if (fileName) {
+                currentMediaId = 'local_' + fileName;
+            } else {
+                currentMediaId = 'url_' + src;
             }
 
             const isBlobUrl = src.startsWith('blob:');
@@ -790,12 +832,14 @@
                 currentVideoBlobUrl = null;
                 setPlayerMode('iframe');
                 iframePlayer.src = convertYouTubeLink(src);
+                currentMediaId = null; // Can't resume iframe
                 showTemporaryAlert('YouTube video loaded.', 'success');
             } else if (isExternalLink) {
                 if (currentVideoBlobUrl) URL.revokeObjectURL(currentVideoBlobUrl);
                 currentVideoBlobUrl = null;
                 setPlayerMode('iframe');
                 iframePlayer.src = src;
+                currentMediaId = null; // Can't resume iframe
                 showTemporaryAlert('External embed loaded.', 'info');
             } else {
                 setPlayerMode('video');
@@ -803,6 +847,7 @@
                 videoPlayer.poster = 'https://placehold.co/800x450/cc3333/ffffff?text=Invalid+Input';
                 videoPlayer.load();
                 showTemporaryAlert('Error: Invalid URL or Format.', 'error');
+                currentMediaId = null;
             }
         }
 
@@ -876,6 +921,25 @@
         videoPlayer.addEventListener('error', () => {
             videoPlayer.poster = 'https://placehold.co/800x450/cc3333/ffffff?text=Media+Loading+Failed';
             showTemporaryAlert('Media failed to load.', 'error');
+        });
+
+        videoPlayer.addEventListener('loadedmetadata', () => {
+             if (currentMediaId) {
+                 const savedTime = localStorage.getItem('resume_' + currentMediaId);
+                 if (savedTime && parseFloat(savedTime) > 5) {
+                     videoPlayer.currentTime = parseFloat(savedTime);
+                     showTemporaryAlert('Resumed at ' + formatTime(savedTime), 'info');
+                 }
+             }
+        });
+
+        videoPlayer.addEventListener('timeupdate', () => {
+            if (currentMediaId && !videoPlayer.paused) {
+                 // Save roughly every second
+                 if (Math.floor(videoPlayer.currentTime) % 2 === 0) {
+                      localStorage.setItem('resume_' + currentMediaId, videoPlayer.currentTime);
+                 }
+            }
         });
 
         // --- Drag & Drop ---
