@@ -5,7 +5,7 @@
   "display": "standalone",
   "background_color": "#09090b",
   "theme_color": "#3b82f6",
-  "description": "A robust, single-file media player supporting local files, external links, and subtitles.",
+  "description": "A versatile media player supporting local files, HLS streams, playlists, audio visualization, subtitle sync, and video filters.",
   "orientation": "any",
   "icons": [
     {

@@ -28,17 +28,22 @@ Built with native web technologies, it offers a desktop-class playback experienc
 
 ## ✨ Key Features
 
-*   **Dual-Mode Player**: ⏯️ Handles local files (`.mp4`, `.mp3`) and external embed links (e.g., Streamtape).
-*   **Advanced Subtitles**: 📝 Supports `.vtt` and `.srt` with automatic conversion.
-*   **Live Customization**: 🎨 Real-time adjustment of subtitle color, background, size, and font family.
-*   **Theme Toggle**: 🌙 Switch between **Dark Mode** and Light Mode.
-*   **Drag-and-Drop**: 🖱️ Quickly load media by dropping files onto the player.
-*   **Robust & Responsive**: 📱 Mobile-first design with strong error handling.
+*   **Universal Playback**: ⏯️ Supports local video/audio (`.mp4`, `.mp3`, `.mkv`), HLS streams (`.m3u8`, `.ts`), and external embed links.
+*   **Playlist System**: 📋 Queue multiple files with Loop (One/All), Shuffle, and Drag & Drop support.
+*   **Audio Visualizer**: 🎵 Real-time, randomized audio visualization for local audio files.
+*   **Smart Resume**: 🧠 Automatically remembers playback progress for local files and URLs.
+*   **Advanced Subtitles**: 📝 Full customization (Color, Size, Font), Time Offset adjustment, and Quick Sync.
+*   **Video Enhancements**: 🎨 Real-time controls for Brightness, Contrast, and Saturation.
+*   **Power Tools**: 🛠️ Picture-in-Picture (PiP), Screenshot capture, and Frame-by-Frame stepping.
+*   **PWA Ready**: 📱 Installable as a Progressive Web App for offline use.
+*   **Privacy Focused**: 🔒 No server uploads; all processing happens locally in the browser.
 
 ## 📦 Tech Stack
 *   **Native HTML5** (`<video>`, `<iframe>`)
 *   **Tailwind CSS** (Styling)
 *   **Vanilla JavaScript** (Logic)
+*   **HLS.js** (Streaming Support)
+*   **Lucide Icons** (Iconography)
 
 ## 📄 License
 MIT License.
