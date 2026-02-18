@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/logo.png" alt="Robust Media Player Logo" width="120" height="120">
+  <img src="assets/logo.svg" alt="Robust Media Player Logo" width="120" height="120">
   <h1>Robust Media Player</h1>
   <p><strong>Universal Local & Stream Player</strong></p>
 
