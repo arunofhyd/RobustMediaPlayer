@@ -2,6 +2,8 @@ const CACHE_NAME = 'robust-player-v1.2';
 const ASSETS = [
   '/',
   '/index.html',
+  '/style.css',
+  '/app.js',
   '/manifest.json',
   '/assets/logo.svg',
   'https://cdn.tailwindcss.com',
