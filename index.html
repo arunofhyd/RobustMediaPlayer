@@ -231,6 +231,53 @@
             to { opacity: 1; }
         }
 
+        /* Seamless True Fullscreen & Window Fill */
+        :fullscreen,
+        :-webkit-full-screen,
+        :-moz-full-screen,
+        .seamless-fullscreen {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            background-color: #000000 !important;
+            border: none !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            aspect-ratio: auto !important;
+        }
+
+        .seamless-fullscreen {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 2147483647 !important;
+        }
+
+        :fullscreen video,
+        :-webkit-full-screen video,
+        :-moz-full-screen video,
+        .seamless-fullscreen video,
+        :fullscreen iframe,
+        :-webkit-full-screen iframe,
+        .seamless-fullscreen iframe {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            object-fit: contain !important;
+            border: none !important;
+            border-radius: 0 !important;
+        }
+
+        /* Auto-hide cursor and overlay controls on idle in fullscreen */
+        .hide-cursor {
+            cursor: none !important;
+        }
+        .hide-cursor #overlayControls {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
     </style>
 </head>
 <body class="bg-background text-foreground min-h-screen p-3 sm:p-8 flex flex-col items-center">
@@ -411,7 +458,7 @@
                 </div>
 
                 <!-- Media Player Container -->
-                <div class="relative w-full aspect-video rounded-lg overflow-hidden border bg-black shadow-lg group">
+                <div id="playerContainer" class="relative w-full aspect-video rounded-lg overflow-hidden border bg-black shadow-lg group">
 
                     <!-- Audio Visualizer Canvas -->
                     <canvas id="audioVisualizer" class="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-90"></canvas>
@@ -952,27 +999,90 @@
              });
         }
 
-        // Fullscreen Logic
-        fullscreenToggle.addEventListener('click', () => {
-            const container = videoPlayer.parentElement;
-            if (!document.fullscreenElement) {
-                container.requestFullscreen().catch(err => {
-                    showTemporaryAlert(`Error attempting to enable fullscreen: ${err.message} (${err.name})`, 'error');
+        // --- Seamless Fullscreen & Screen Share Optimization ---
+        const playerContainer = document.getElementById('playerContainer') || videoPlayer.parentElement;
+        let idleCursorTimer = null;
+
+        function isFullscreenActive() {
+            return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement || playerContainer.classList.contains('seamless-fullscreen'));
+        }
+
+        function enterSeamlessFullscreen() {
+            const req = playerContainer.requestFullscreen || playerContainer.webkitRequestFullscreen || playerContainer.mozRequestFullScreen || playerContainer.msRequestFullscreen;
+            if (req) {
+                req.call(playerContainer, { navigationUI: 'hide' }).catch(() => {
+                    playerContainer.classList.add('seamless-fullscreen');
+                    updateFullscreenUI(true);
                 });
             } else {
-                document.exitFullscreen();
+                playerContainer.classList.add('seamless-fullscreen');
+                updateFullscreenUI(true);
             }
-        });
+        }
 
-        document.addEventListener('fullscreenchange', () => {
-            if (document.fullscreenElement) {
+        function exitSeamlessFullscreen() {
+            if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
+                const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+                if (exit) exit.call(document).catch(() => {});
+            }
+            playerContainer.classList.remove('seamless-fullscreen');
+            playerContainer.classList.remove('hide-cursor');
+            updateFullscreenUI(false);
+        }
+
+        function toggleSeamlessFullscreen() {
+            if (isFullscreenActive()) {
+                exitSeamlessFullscreen();
+            } else {
+                enterSeamlessFullscreen();
+            }
+        }
+
+        function updateFullscreenUI(active) {
+            if (active) {
                 fullscreenToggle.innerHTML = '<i data-lucide="minimize" class="h-5 w-5 sm:h-6 sm:w-6"></i>';
-                fullscreenToggle.title = "Exit Fullscreen";
+                fullscreenToggle.title = "Exit Fullscreen (Esc / F)";
             } else {
                 fullscreenToggle.innerHTML = '<i data-lucide="maximize" class="h-5 w-5 sm:h-6 sm:w-6"></i>';
-                fullscreenToggle.title = "Fullscreen";
+                fullscreenToggle.title = "Fullscreen (F / Double-Click)";
             }
             lucide.createIcons({ root: fullscreenToggle });
+        }
+
+        function resetIdleCursorTimer() {
+            if (!isFullscreenActive()) {
+                playerContainer.classList.remove('hide-cursor');
+                return;
+            }
+            playerContainer.classList.remove('hide-cursor');
+            clearTimeout(idleCursorTimer);
+            idleCursorTimer = setTimeout(() => {
+                if (isFullscreenActive() && !videoPlayer.paused) {
+                    playerContainer.classList.add('hide-cursor');
+                }
+            }, 2500);
+        }
+
+        fullscreenToggle.addEventListener('click', toggleSeamlessFullscreen);
+
+        // Double click video to toggle seamless fullscreen
+        videoPlayer.addEventListener('dblclick', (e) => {
+            e.preventDefault();
+            toggleSeamlessFullscreen();
+        });
+
+        playerContainer.addEventListener('mousemove', resetIdleCursorTimer);
+        playerContainer.addEventListener('pointerdown', resetIdleCursorTimer);
+
+        ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
+            document.addEventListener(evt, () => {
+                const active = isFullscreenActive();
+                if (!active) {
+                    playerContainer.classList.remove('seamless-fullscreen');
+                    playerContainer.classList.remove('hide-cursor');
+                }
+                updateFullscreenUI(active);
+            });
         });
 
         // Screenshot Logic
@@ -1637,9 +1747,12 @@
                     break;
                 case 'f': case 'F':
                     if (e.repeat) return;
-                    const container = videoPlayer.parentElement;
-                    if (!document.fullscreenElement) container.requestFullscreen();
-                    else document.exitFullscreen();
+                    toggleSeamlessFullscreen();
+                    break;
+                case 'Escape':
+                    if (isFullscreenActive()) {
+                        exitSeamlessFullscreen();
+                    }
                     break;
                 default: handled = false;
             }
